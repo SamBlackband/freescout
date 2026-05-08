@@ -1,0 +1,37 @@
+#!/command/with-contenv bash
+
+source /assets/functions/00-container
+prepare_service
+PROCESS_NAME="freescout-app-key-sync"
+
+check_service_initialized init 30-freescout
+
+if [ -z "${APP_KEY}" ]; then
+    print_warn "APP_KEY not set - leaving FreeScout generated key unchanged"
+    liftoff
+fi
+
+CONFIG_FILE="${NGINX_WEBROOT}/.env"
+if [ -f "/data/config" ]; then
+    CONFIG_FILE="/data/config"
+fi
+
+if [ ! -f "${CONFIG_FILE}" ]; then
+    print_warn "FreeScout env file not found at ${CONFIG_FILE} - skipping APP_KEY sync"
+    liftoff
+fi
+
+print_info "Syncing APP_KEY into ${CONFIG_FILE}"
+if grep -q "^APP_KEY=" "${CONFIG_FILE}" > /dev/null 2>&1; then
+    sed -i --follow-symlinks "s#^APP_KEY=.*#APP_KEY=${APP_KEY}#g" "${CONFIG_FILE}"
+else
+    echo "APP_KEY=${APP_KEY}" | sudo -u "${NGINX_USER}" tee -a "${CONFIG_FILE}" > /dev/null
+fi
+
+chown "${NGINX_USER}":"${NGINX_GROUP}" "${CONFIG_FILE}"
+
+cd "${NGINX_WEBROOT}" || exit 1
+silent sudo -u "${NGINX_USER}" php artisan config:clear
+silent sudo -u "${NGINX_USER}" php artisan freescout:clear-cache
+
+liftoff
