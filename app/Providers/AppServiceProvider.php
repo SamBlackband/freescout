@@ -31,6 +31,14 @@ class AppServiceProvider extends ServiceProvider
         \App\Follower::observe(\App\Observers\FollowerObserver::class);
         \Illuminate\Notifications\DatabaseNotification::observe(\App\Observers\DatabaseNotificationObserver::class);
 
+        \Eventy::addAction('thread.created', function ($thread) {
+            app(\App\Services\HandledSupportSyncEmitter::class)->emitThreadCreated($thread);
+        }, 20, 1);
+
+        \Eventy::addAction('conversation.updated', function ($conversation) {
+            app(\App\Services\HandledSupportSyncEmitter::class)->emitConversationUpdated($conversation);
+        }, 20, 1);
+
         \Validator::extend('safehost', function ($attribute, $value, $parameters, $validator) {
             if (!$value) {
                 return true;

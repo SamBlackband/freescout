@@ -9,22 +9,22 @@
     <!-- CSRF Token -->
     <meta name="csrf-token" content="{{ csrf_token() }}">
     {!! \Helper::cspMetaTag() !!}
-    @php $app_name = \Eventy::filter('layout.title.name', config('app.name', 'FreeScout')); @endphp
+    @php $app_name = \Eventy::filter('layout.title.name', config('app.name', 'Handled Support')); @endphp
     <title>@if ($__env->yieldContent('title_full'))@yield('title_full') @elseif ($__env->yieldContent('title'))@yield('title') - {{ $app_name }} @else{{ $app_name }}@endif</title>
 
     <link rel="apple-touch-icon" sizes="180x180" href="{{ asset('apple-touch-icon.png') }}">
-    <link rel="shortcut icon" type="image/x-icon" href="@filter('layout.favicon', URL::asset('favicon.ico'))">
+    <link rel="icon" type="image/svg+xml" href="@filter('layout.favicon', URL::asset('img/handled-mark.svg'))">
     <link rel="manifest" href="{{ asset('site.webmanifest') }}" crossorigin="use-credentials">
     <link rel="mask-icon" href="{{ asset('safari-pinned-tab.svg') }}" color="#5bbad5">
     <meta name="msapplication-TileColor" content="#da532c">
-    <meta name="theme-color" content="@filter('layout.theme_color', '#ffffff')">
+    <meta name="theme-color" content="@filter('layout.theme_color', '#0F1923')">
     @action('layout.head')
     {{-- Styles --}}
     {{-- Conversation page must open immediately, so we are loading scripts present on conversation page --}}
-    {{-- style.css must be the last to able to redefine styles --}}
+    {{-- handled.css must stay last to redefine styles safely --}}
     @php
         try {
-            $styles= array('/css/fonts.css', '/css/bootstrap.css', '/css/select2/select2.min.css', '/js/featherlight/featherlight.min.css', '/js/featherlight/featherlight.gallery.min.css', '/css/magic-check.css', '/css/style.css' );
+            $styles= array('/css/fonts.css', '/css/bootstrap.css', '/css/select2/select2.min.css', '/js/featherlight/featherlight.min.css', '/js/featherlight/featherlight.gallery.min.css', '/css/magic-check.css', '/css/style.css', '/css/handled.css' );
             if (Helper::isLocaleRtl()) {
                 $styles[] = '/css/bootstrap-rtl.css';
                 $styles[] = '/css/style-rtl.css';
@@ -40,13 +40,13 @@
 
     @yield('stylesheets')
 </head>
-<body class="locale-{{ app()->getLocale() }} @if (Helper::isLocaleRtl()) rtl @endif @if (!Auth::user()) user-is-guest @endif @if (Auth::user() && Auth::user()->isAdmin()) user-is-admin @endif @yield('body_class') @action('body.class')" @yield('body_attrs') @if (Auth::user()) data-auth_user_id="{{ Auth::user()->id }}" @endif>
+<body class="handled-shell locale-{{ app()->getLocale() }} @if (Helper::isLocaleRtl()) rtl @endif @if (!Auth::user()) user-is-guest @endif @if (Auth::user() && Auth::user()->isAdmin()) user-is-admin @endif @yield('body_class') @action('body.class')" @yield('body_attrs') @if (Auth::user()) data-auth_user_id="{{ Auth::user()->id }}" @endif>
 <div id="app">
 
         @if (Auth::user() && empty(app('request')->x_embed) && empty($__env->yieldContent('guest_mode')))
 
             <nav class="navbar navbar-default navbar-static-top">
-                <div class="container">
+                <div class="container-fluid handled-shell-container">
                     <div class="navbar-header">
 
                         <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#app-navbar-collapse" aria-expanded="false">
@@ -62,7 +62,8 @@
                             </a>
                         @else
                             <a class="navbar-brand" href="{{ route('dashboard') }}" title="{{ __('Dashboard') }}">
-                                <img src="@filter('layout.header_logo', asset('img/logo-brand.svg'))" height="100%" alt="" />
+                                <img src="@filter('layout.header_logo', asset('img/handled-wordmark.svg'))" height="100%" alt="{{ $app_name }}" />
+                                <span class="handled-navbar-label">{{ __('Support Ops') }}</span>
                             </a>
                         @endif
                     </div>
@@ -236,7 +237,7 @@
             <div class="alert alert-danger">{{ $browser_check['msg'] }}</div>
         @endif
         @if ($__env->yieldContent('sidebar'))
-            <div class="layout-2col">
+            <div class="layout-2col handled-shell-layout">
                 <div class="sidebar-2col">
                     @yield('sidebar')
                 </div>
@@ -245,7 +246,7 @@
                 </div>
             </div>
         @else
-            <div class="content @yield('content_class')">
+            <div class="content handled-shell-content @yield('content_class')">
                 @yield('content')
             </div>
         @endif
@@ -254,7 +255,7 @@
             && empty(app('request')->x_embed) && empty($__env->yieldContent('no_footer')))
             <div class="footer">
                 @if (!\Eventy::filter('footer.text', ''))
-                    &copy; 2018-{{ date('Y') }} <a href="{{ config('app.freescout_url') }}" target="blank">{{ \Config::get('app.name') }}</a> — {{ __('Free open source help desk & shared mailbox') }}
+                    &copy; 2018-{{ date('Y') }} <a href="https://handled.group" target="blank">{{ \Config::get('app.name') }}</a> — {{ __('Handled workspace for support operations and customer context') }}
                 @else
                     {!! \Eventy::filter('footer.text', '') !!}
                 @endif

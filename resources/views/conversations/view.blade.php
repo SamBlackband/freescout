@@ -7,10 +7,12 @@
 @section('title_full', '#'.$conversation->number.' '.$conversation->getSubject().($customer ? ' - '.$customer->getFullName(true) : ''))
 
 @if (app('request')->input('print'))
-    @section('body_class', 'body-conv print')
+    @section('body_class', 'body-conv handled-conversation print')
 @else
-    @section('body_class', 'body-conv'.($is_in_chat_mode ? ' chat-mode' : ''))
+    @section('body_class', 'body-conv handled-conversation'.($is_in_chat_mode ? ' chat-mode' : ''))
 @endif
+
+@section('content_class', 'handled-content handled-content-wide')
 
 @section('body_attrs')@parent data-conversation_id="{{ $conversation->id }}"@endsection
 
@@ -20,6 +22,10 @@
 @endsection
 
 @section('content')
+    @php
+        $conversation_channel = $conversation->getChannelName();
+        $conversation_waiting_since = $conversation->getWaitingSince();
+    @endphp
     @include('partials/flash_messages')
 
     <div id="conv-layout" class="conv-type-{{ strtolower($conversation->getTypeName()) }} @if ($is_following) conv-following @endif">
@@ -216,6 +222,18 @@
                             @endforeach
                         </div>
                     </div>
+                </div>
+                <div class="handled-case-strip">
+                    <span class="handled-case-pill handled-case-pill-primary">{{ $mailbox->name }}</span>
+                    <span class="handled-case-pill">{{ $conversation->getStatusName() }}</span>
+                    <span class="handled-case-pill">{{ __('Assignee') }}: {{ $conversation->getAssigneeName(true) }}</span>
+                    <span class="handled-case-pill">{{ $conversation->getTypeName() }}</span>
+                    @if ($conversation_channel)
+                        <span class="handled-case-pill">{{ $conversation_channel }}</span>
+                    @endif
+                    @if ($conversation_waiting_since)
+                        <span class="handled-case-pill">{{ __('Waiting') }}: {{ $conversation_waiting_since }}</span>
+                    @endif
                 </div>
                 @if ($is_in_chat_mode)
                     <div class="conv-top-block conv-top-chat clearfix">

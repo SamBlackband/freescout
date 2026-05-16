@@ -1,10 +1,34 @@
 @extends('layouts.app')
 
 @section('title', __('Dashboard'))
+@section('body_class', 'handled-dashboard')
+@section('content_class', 'handled-content handled-content-wide')
 
 @section('content')
-<div class="container">
-    <div class="heading">{{ App\Option::getCompanyName() }} {{ __('Dashboard') }}@action('dashboard.heading_append')</div>
+@php
+    $mailbox_total = count($mailboxes);
+    $active_mailbox_total = collect($mailboxes)->filter(function ($mailbox) {
+        return $mailbox->isActive();
+    })->count();
+@endphp
+<div class="container handled-page handled-page-wide">
+    <div class="handled-hero handled-dashboard-hero">
+        <div>
+            <div class="handled-eyebrow">Handled Support</div>
+            <div class="heading">{{ __('Support workspace') }}@action('dashboard.heading_append')</div>
+            <p>{{ __('A wider operator view across inboxes, queues, and live customer conversations.') }}</p>
+        </div>
+        <div class="handled-hero-metrics">
+            <div class="handled-metric-card">
+                <span class="handled-metric-value">{{ $mailbox_total }}</span>
+                <span class="handled-metric-label">{{ __('Mailboxes') }}</span>
+            </div>
+            <div class="handled-metric-card">
+                <span class="handled-metric-value">{{ $active_mailbox_total }}</span>
+                <span class="handled-metric-label">{{ __('Live inboxes') }}</span>
+            </div>
+        </div>
+    </div>
     @filter('dashboard.before', '')
     @if (count($mailboxes))
         <div class="dash-cards margin-top">

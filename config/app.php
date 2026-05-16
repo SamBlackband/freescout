@@ -31,7 +31,7 @@ return [
     |
     */
 
-    'name' => 'FreeScout',
+    'name' => 'Handled Support',
 
     /*
     |--------------------------------------------------------------------------
@@ -445,6 +445,15 @@ return [
     'curl_user_agent'      => env('APP_CURL_USER_AGENT', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 7_1_4) AppleWebKit/603.26 (KHTML, like Gecko) Chrome/55.0.3544.220 Safari/534'),
     // Should be set for curl and Guzzle.
     'curl_ssl_verifypeer'  => env('APP_CURL_SSL_VERIFYPEER', true),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Handled support sync bridge
+    |--------------------------------------------------------------------------
+    */
+    'handled_support_sync_enabled' => env('HANDLED_SUPPORT_SYNC_ENABLED', false),
+    'handled_support_sync_url'     => env('HANDLED_SUPPORT_SYNC_URL', ''),
+    'handled_support_sync_secret'  => env('HANDLED_SUPPORT_SYNC_SECRET', ''),
 
     /*
     |--------------------------------------------------------------------------
