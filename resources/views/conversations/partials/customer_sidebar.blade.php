@@ -208,8 +208,6 @@
         @php
             $channels = $customer->getChannels();
             $phones = $customer->getPhones();
-            $websites = $customer->getWebsites();
-            $social_profiles = $customer->getSocialProfiles();
             $ordered_emails = [];
             if (!empty($conversation->customer_email)) {
                 foreach ($customer->emails as $email) {
@@ -223,6 +221,8 @@
                     $ordered_emails[] = $email->email;
                 }
             }
+            $primary_email = $ordered_emails[0] ?? null;
+            $primary_phone = !empty($phones[0]['value']) ? $phones[0]['value'] : null;
         @endphp
         <div class="handled-customer-identity">
             <div class="handled-customer-avatar">
@@ -241,12 +241,12 @@
                     </div>
                 @endif
                 <ul class="handled-customer-contacts">
-                    @foreach ($ordered_emails as $email_value)
-                        <li><span class="handled-customer-contact">{{ $email_value }}</span></li>
-                    @endforeach
-                    @foreach ($phones as $phone)
-                        <li><span class="handled-customer-contact">{{ $phone['value'] }}</span></li>
-                    @endforeach
+                    @if ($primary_email)
+                        <li><span class="handled-customer-contact">{{ $primary_email }}</span></li>
+                    @endif
+                    @if ($primary_phone)
+                        <li><span class="handled-customer-contact">{{ $primary_phone }}</span></li>
+                    @endif
                 </ul>
             </div>
         </div>
@@ -265,26 +265,6 @@
                         <dt>{{ __('Owner') }}</dt>
                         <dd>{{ $handled_business['owner_name'] ?? '—' }}</dd>
                     </div>
-                    <div>
-                        <dt>{{ __('Plan') }}</dt>
-                        <dd>{{ $handled_business['plan_tier'] ?? '—' }}</dd>
-                    </div>
-                    <div>
-                        <dt>{{ __('Brand') }}</dt>
-                        <dd>{{ $handled_business['brand_id'] ?? '—' }}</dd>
-                    </div>
-                    @if (!empty($handled_business['instagram_handle']))
-                        <div>
-                            <dt>{{ __('Instagram') }}</dt>
-                            <dd>{{ $handled_business['instagram_handle'] }}</dd>
-                        </div>
-                    @endif
-                    @if (!empty($handled_business['booking_url']))
-                        <div>
-                            <dt>{{ __('Booking') }}</dt>
-                            <dd><a class="handled-context-link" href="{{ $handled_business['booking_url'] }}" target="_blank">{{ __('Open link') }}</a></dd>
-                        </div>
-                    @endif
                 </dl>
             @else
                 <p class="handled-context-empty">{{ __('No Handled account is linked to this conversation yet.') }}</p>
@@ -304,10 +284,6 @@
                     <div>
                         <dt>{{ __('Priority') }}</dt>
                         <dd>{{ $handled_ticket['priority'] ?? '—' }}</dd>
-                    </div>
-                    <div>
-                        <dt>{{ __('Last channel') }}</dt>
-                        <dd>{{ $handled_ticket['last_channel'] ?? '—' }}</dd>
                     </div>
                     <div>
                         <dt>{{ __('Sync state') }}</dt>
