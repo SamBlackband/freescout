@@ -1,7 +1,6 @@
 @if (!empty($customer))
     @php
         $customer_location = array_filter([$customer->city, $customer->state, $customer->getCountryName()]);
-        $previous_conversations_total = method_exists($prev_conversations, 'total') ? $prev_conversations->total() : count($prev_conversations);
         $handled_support_context = isset($conversation) ? app(\App\Services\HandledSupportContextService::class)->lookupForConversation($conversation) : null;
         $handled_business = is_array($handled_support_context) ? ($handled_support_context['business'] ?? null) : null;
         $handled_setup = is_array($handled_support_context) ? ($handled_support_context['setup'] ?? null) : null;
@@ -9,38 +8,34 @@
         $handled_ticket = is_array($handled_support_context) ? ($handled_support_context['ticket'] ?? null) : null;
     @endphp
     <div class="conv-customer-header"></div>
-    <div class="handled-customer-sidebar">
-        <div class="conv-customer-block conv-sidebar-block handled-context-card handled-customer-summary">
-            <div class="handled-context-card-header">
-                <div>
-                    <div class="handled-eyebrow">{{ __('Customer') }}</div>
-                    <h3>{{ __('Customer context') }}</h3>
-                </div>
-                @if (isset($conversation))
-                    <div class="dropdown customer-trigger" data-toggle="tooltip" title="{{ __("Settings") }}">
-                        <a href="#" class="dropdown-toggle glyphicon glyphicon-cog" data-toggle="dropdown"></a>
-                        <ul class="dropdown-menu dropdown-menu-right" role="menu">
-                            <li role="presentation"><a href="{{ route('customers.update', ['id' => $customer->id]) }}" tabindex="-1" role="menuitem">{{ __("Edit Profile") }}</a></li>
-                            @if (!$conversation->isChat())
-                                <li role="presentation"><a href="{{ route('conversations.ajax_html', array_merge(['action' =>
-                        'change_customer'], \Request::all(), ['conversation_id' => $conversation->id]) ) }}" data-trigger="modal" data-modal-title="{{ __("Change Customer") }}" data-modal-no-footer="true" data-modal-on-show="changeCustomerInit" tabindex="-1" role="menuitem">{{ __("Change Customer") }}</a></li>
-                            @endif
-                            {{ \Eventy::action('conversation.customer.menu', $customer, $conversation) }}
-                            {{-- No need to use this --}}
-                            {{ \Eventy::action('customer_profile.menu', $customer, $conversation) }}
-                        </ul>
-                    </div>
-                @endif
+    <div class="conv-customer-block conv-sidebar-block handled-context-panel handled-customer-summary">
+        <div class="handled-context-card-header">
+            <div>
+                <div class="handled-eyebrow">{{ __('Customer') }}</div>
+                <h3>{{ __('Customer context') }}</h3>
             </div>
-            @include('customers/profile_snippet', ['customer' => $customer, 'main_email' => $conversation->customer_email ?? '', 'conversation' => $conversation ?? null])
+            @if (isset($conversation))
+                <div class="dropdown customer-trigger" data-toggle="tooltip" title="{{ __("Settings") }}">
+                    <a href="#" class="dropdown-toggle glyphicon glyphicon-cog" data-toggle="dropdown"></a>
+                    <ul class="dropdown-menu dropdown-menu-right" role="menu">
+                        <li role="presentation"><a href="{{ route('customers.update', ['id' => $customer->id]) }}" tabindex="-1" role="menuitem">{{ __("Edit Profile") }}</a></li>
+                        @if (!$conversation->isChat())
+                            <li role="presentation"><a href="{{ route('conversations.ajax_html', array_merge(['action' =>
+                    'change_customer'], \Request::all(), ['conversation_id' => $conversation->id]) ) }}" data-trigger="modal" data-modal-title="{{ __("Change Customer") }}" data-modal-no-footer="true" data-modal-on-show="changeCustomerInit" tabindex="-1" role="menuitem">{{ __("Change Customer") }}</a></li>
+                        @endif
+                        {{ \Eventy::action('conversation.customer.menu', $customer, $conversation) }}
+                        {{-- No need to use this --}}
+                        {{ \Eventy::action('customer_profile.menu', $customer, $conversation) }}
+                    </ul>
+                </div>
+            @endif
         </div>
+        @include('customers/profile_snippet', ['customer' => $customer, 'main_email' => $conversation->customer_email ?? '', 'conversation' => $conversation ?? null])
         @if ($customer->company || $customer->job_title || $customer_location)
-            <div class="conv-sidebar-block handled-context-card">
-                <div class="handled-context-card-header">
-                    <div>
-                        <div class="handled-eyebrow">{{ __('Business') }}</div>
-                        <h4>{{ __('Account details') }}</h4>
-                    </div>
+            <div class="handled-context-section">
+                <div>
+                    <div class="handled-eyebrow">{{ __('Business') }}</div>
+                    <h4>{{ __('Account details') }}</h4>
                 </div>
                 <dl class="handled-context-grid">
                     @if ($customer->company)
@@ -64,12 +59,10 @@
                 </dl>
             </div>
         @endif
-        <div class="conv-sidebar-block handled-context-card">
-            <div class="handled-context-card-header">
-                <div>
-                    <div class="handled-eyebrow">{{ __('Handled') }}</div>
-                    <h4>{{ __('Account in app') }}</h4>
-                </div>
+        <div class="handled-context-section">
+            <div>
+                <div class="handled-eyebrow">{{ __('Handled') }}</div>
+                <h4>{{ __('Account in app') }}</h4>
             </div>
             @if ($handled_business)
                 <dl class="handled-context-grid">
@@ -107,12 +100,10 @@
             @endif
         </div>
         @if ($handled_setup || $handled_support_summary)
-            <div class="conv-sidebar-block handled-context-card">
-                <div class="handled-context-card-header">
-                    <div>
-                        <div class="handled-eyebrow">{{ __('Visibility') }}</div>
-                        <h4>{{ __('Support + setup state') }}</h4>
-                    </div>
+            <div class="handled-context-section">
+                <div>
+                    <div class="handled-eyebrow">{{ __('Visibility') }}</div>
+                    <h4>{{ __('Support + setup state') }}</h4>
                 </div>
                 <dl class="handled-context-grid">
                     @if ($handled_support_summary)
@@ -138,12 +129,10 @@
                 </dl>
             </div>
         @endif
-        <div class="conv-sidebar-block handled-context-card">
-            <div class="handled-context-card-header">
-                <div>
-                    <div class="handled-eyebrow">{{ __('Linked ticket') }}</div>
-                    <h4>@if ($handled_ticket)#{{ $handled_ticket['id'] ?? '—' }} {{ $handled_ticket['subject'] ?? __('Support request') }}@else{{ __('Support request') }}@endif</h4>
-                </div>
+        <div class="handled-context-section">
+            <div>
+                <div class="handled-eyebrow">{{ __('Linked ticket') }}</div>
+                <h4>@if ($handled_ticket)#{{ $handled_ticket['id'] ?? '—' }} {{ $handled_ticket['subject'] ?? __('Support request') }}@else{{ __('Support request') }}@endif</h4>
             </div>
             @if ($handled_ticket)
                 <dl class="handled-context-grid">
@@ -183,7 +172,7 @@
         </div>
     </div>
     @if (isset($conversation) && isset($mailbox))
-    	@action('conversation.before_prev_convs', $customer, $conversation, $mailbox)
+     	@action('conversation.before_prev_convs', $customer, $conversation, $mailbox)
     @endif
     @if (count($prev_conversations))
         @include('conversations/partials/prev_convs_short')

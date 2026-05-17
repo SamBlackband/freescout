@@ -6,26 +6,66 @@ PROCESS_NAME="freescout-app-key-sync"
 
 check_service_initialized init 30-freescout
 
-CONFIG_FILE=""
+CONFIG_FILES=()
 for candidate in "/data/config/.env" "/data/config" "${NGINX_WEBROOT}/.env"; do
     if [ -f "${candidate}" ]; then
-        CONFIG_FILE="${candidate}"
-        break
+        CONFIG_FILES+=("${candidate}")
     fi
 done
 
-if [ -n "${CONFIG_FILE}" ] && [ -f "${CONFIG_FILE}" ]; then
-    if [ -n "${APP_KEY}" ]; then
-        print_info "Syncing APP_KEY into ${CONFIG_FILE}"
-        if grep -q "^APP_KEY=" "${CONFIG_FILE}" > /dev/null 2>&1; then
-            sed -i --follow-symlinks "s#^APP_KEY=.*#APP_KEY=${APP_KEY}#g" "${CONFIG_FILE}"
-        else
-            echo "APP_KEY=${APP_KEY}" | sudo -u "${NGINX_USER}" tee -a "${CONFIG_FILE}" > /dev/null
-        fi
-        chown "${NGINX_USER}":"${NGINX_GROUP}" "${CONFIG_FILE}"
-    else
-        print_warn "APP_KEY not set - leaving FreeScout key unchanged"
+upsert_env_value() {
+    local file="$1"
+    local key="$2"
+    local value="$3"
+    local tmp_file
+
+    tmp_file="$(mktemp)"
+    if [ -f "${file}" ]; then
+        grep -v "^${key}=" "${file}" > "${tmp_file}" || true
     fi
+    printf "%s=%s\n" "${key}" "${value}" >> "${tmp_file}"
+    cat "${tmp_file}" | sudo -u "${NGINX_USER}" tee "${file}" > /dev/null
+    rm -f "${tmp_file}"
+    chown "${NGINX_USER}":"${NGINX_GROUP}" "${file}"
+}
+
+sync_env_key() {
+    local key="$1"
+    local value="${!key:-}"
+
+    if [ -z "${value}" ]; then
+        return
+    fi
+
+    for config_file in "${CONFIG_FILES[@]}"; do
+        upsert_env_value "${config_file}" "${key}" "${value}"
+    done
+}
+
+if [ "${#CONFIG_FILES[@]}" -gt 0 ]; then
+    print_info "Syncing persisted FreeScout env into ${CONFIG_FILES[*]}"
+    for env_key in \
+        APP_KEY \
+        APP_ENV \
+        APP_DEBUG \
+        APP_URL \
+        ENABLE_AUTO_UPDATE \
+        MAIL_DRIVER \
+        MAIL_HOST \
+        MAIL_PORT \
+        MAIL_FROM_ADDRESS \
+        MAIL_FROM_NAME \
+        MAIL_ENCRYPTION \
+        MAIL_USERNAME \
+        MAIL_PASSWORD \
+        MAIL_AUTH_MODE \
+        MAIL_SMTP_TIMEOUT \
+        HANDLED_SUPPORT_SYNC_ENABLED \
+        HANDLED_SUPPORT_SYNC_URL \
+        HANDLED_SUPPORT_SYNC_SECRET
+    do
+        sync_env_key "${env_key}"
+    done
 else
     print_warn "FreeScout env file not found in /data/config/.env, /data/config, or ${NGINX_WEBROOT}/.env - skipping APP_KEY sync"
 fi
