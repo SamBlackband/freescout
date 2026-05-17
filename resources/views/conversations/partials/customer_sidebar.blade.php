@@ -9,8 +9,14 @@
     @endphp
     <style {!! \Helper::cspNonceAttr() !!}>
         .handled-context-panel {
+            display: flow-root;
             padding-bottom: 18px;
             overflow: visible;
+        }
+
+        #conv-layout-customer {
+            position: static !important;
+            top: auto !important;
         }
 
         .handled-context-card-header {
@@ -87,6 +93,34 @@
             color: #0f1923;
             font-size: 13px;
             line-height: 1.45;
+        }
+
+        .handled-customer-summary .handled-customer-links {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px 10px;
+            margin-top: 10px;
+        }
+
+        .handled-customer-summary .handled-customer-links a {
+            color: #607d9f;
+            font-size: 12px;
+            font-weight: 600;
+            text-decoration: none;
+        }
+
+        .handled-customer-summary .handled-customer-links a:hover,
+        .handled-customer-summary .handled-customer-links a:focus {
+            color: #0f1923;
+            text-decoration: none;
+        }
+
+        .handled-customer-summary .handled-customer-note {
+            margin-top: 12px;
+            color: #5f6f82;
+            font-size: 13px;
+            font-style: italic;
+            line-height: 1.5;
         }
 
         .handled-context-grid {
@@ -179,6 +213,8 @@
         @php
             $channels = $customer->getChannels();
             $phones = $customer->getPhones();
+            $websites = $customer->getWebsites();
+            $social_profiles = $customer->getSocialProfiles();
             $ordered_emails = [];
             if (!empty($conversation->customer_email)) {
                 foreach ($customer->emails as $email) {
@@ -217,6 +253,22 @@
                         <li><span class="handled-customer-contact">{{ $phone['value'] }}</span></li>
                     @endforeach
                 </ul>
+                @if ($websites || $social_profiles)
+                    <div class="handled-customer-links">
+                        @foreach ($websites as $website)
+                            <a href="{{ $website }}" target="_blank">{{ parse_url($website, PHP_URL_HOST) ?: __('Website') }}</a>
+                        @endforeach
+                        @foreach ($social_profiles as $sp)
+                            @php($formatted_social = App\Customer::formatSocialProfile($sp))
+                            <a href="{{ $formatted_social['value_url'] }}" target="_blank">{{ $formatted_social['type_name'] }}</a>
+                        @endforeach
+                    </div>
+                @endif
+                @if ($customer->notes)
+                    <div class="handled-customer-note">{{ $customer->notes }}</div>
+                @endif
+                @action('customer.profile.extra', $customer, $conversation ?? '')
+                @action('customer.profile_data', $customer, $conversation ?? '')
             </div>
         </div>
         @if ($customer->company || $customer->job_title || $customer_location)
@@ -242,6 +294,12 @@
                         <div>
                             <dt>{{ __('Location') }}</dt>
                             <dd>{{ implode(', ', $customer_location) }}</dd>
+                        </div>
+                    @endif
+                    @if ($customer->address || $customer->zip)
+                        <div>
+                            <dt>{{ __('Address') }}</dt>
+                            <dd>{{ trim(($customer->address ? $customer->address : '').(($customer->address && $customer->zip) ? ', ' : '').($customer->zip ? $customer->zip : '')) }}</dd>
                         </div>
                     @endif
                 </dl>
