@@ -295,13 +295,4 @@
             @endif
         </div>
     </div>
-    @if (isset($conversation) && isset($mailbox))
-     	@action('conversation.before_prev_convs', $customer, $conversation, $mailbox)
-    @endif
-    @if (count($prev_conversations))
-        @include('conversations/partials/prev_convs_short')
-    @endif
-    @if (isset($conversation) && isset($mailbox))
-    	@action('conversation.after_prev_convs', $customer, $conversation, $mailbox)
-    @endif
 @endif

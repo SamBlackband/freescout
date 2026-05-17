@@ -5728,7 +5728,14 @@ function adjustCustomerSidebarHeight()
 	}
 
 	var layout = $('#conv-layout');
-	var sidebar_h = $('#conv-layout-customer')[0].scrollHeight;
+	var sidebar = $('#conv-layout-customer');
+	var sidebar_h = 0;
+
+	sidebar.children(':visible').each(function() {
+		sidebar_h += $(this).outerHeight(true);
+	});
+
+	sidebar_h = Math.max(sidebar_h, sidebar[0].scrollHeight, sidebar.outerHeight(true));
 
 	layout.css('min-height', '');
 
