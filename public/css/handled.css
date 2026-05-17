@@ -80,9 +80,25 @@ body.handled-shell .navbar-default .navbar-nav > .active > a:hover {
     background: rgba(96, 125, 159, 0.12);
 }
 
+body.handled-shell .navbar-default .navbar-nav > li > a,
+body.handled-shell .navbar-default .navbar-nav > li > a span,
+body.handled-shell .navbar-default .navbar-nav > li > a .caret,
+body.handled-shell .navbar-default .navbar-right > li > a,
+body.handled-shell .navbar-default .navbar-right > li > a i,
+body.handled-shell .navbar-default .navbar-right > li > a span {
+    color: var(--handled-primary) !important;
+    text-shadow: none;
+}
+
+body.handled-shell .navbar-default .navbar-nav > li > a .caret,
+body.handled-shell .navbar-default .navbar-right > li > a .caret {
+    border-top-color: currentColor;
+    border-bottom-color: currentColor;
+}
+
 body.handled-shell .handled-shell-layout {
     display: grid;
-    grid-template-columns: 280px minmax(0, 1fr);
+    grid-template-columns: 264px minmax(0, 1fr);
     min-height: calc(100vh - 64px);
     gap: 24px;
     padding: 24px;
@@ -251,11 +267,11 @@ body.handled-shell.handled-conversation .content-2col {
 
 body.handled-shell.handled-conversation #conv-layout {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(360px, 420px);
+    grid-template-columns: minmax(0, 1fr) 340px;
     grid-template-areas:
         "header header"
         "main customer";
-    gap: 24px;
+    gap: 20px;
     align-items: start;
 }
 
@@ -277,6 +293,7 @@ body.handled-shell.handled-conversation #conv-layout-customer {
     grid-area: customer;
     position: sticky;
     top: 24px;
+    align-self: start;
 }
 
 body.handled-shell.handled-conversation #conv-toolbar,
@@ -513,7 +530,10 @@ body.handled-shell.handled-conversation .thread-message {
 }
 
 body.handled-shell.handled-conversation .thread-header {
+    display: flex;
+    flex-wrap: wrap;
     align-items: flex-start;
+    justify-content: space-between;
     gap: 18px;
 }
 
@@ -521,6 +541,19 @@ body.handled-shell.handled-conversation .thread-body {
     margin-top: 16px;
     padding-top: 18px;
     border-top: 1px solid rgba(217, 227, 239, 0.9);
+}
+
+body.handled-shell.handled-conversation .thread-title {
+    float: none;
+    flex: 1 1 360px;
+    max-width: none;
+    min-width: 0;
+}
+
+body.handled-shell.handled-conversation .thread-info {
+    float: none;
+    margin-left: auto;
+    text-align: right;
 }
 
 body.handled-shell.handled-conversation .thread-recipients {
@@ -577,6 +610,7 @@ body.handled-shell .sidebar-title-extra-value {
 body.handled-shell .sidebar-menu {
     padding: 10px;
     margin: 0;
+    list-style: none;
 }
 
 body.handled-shell .sidebar-menu > li + li {
@@ -586,19 +620,59 @@ body.handled-shell .sidebar-menu > li + li {
 body.handled-shell .sidebar-menu > li > a,
 body.handled-shell .sidebar-menu > li > span,
 body.handled-shell .sidebar-menu .dropdown-toggle {
-    display: flex;
+    display: grid;
+    grid-template-columns: 16px minmax(0, 1fr) auto;
     align-items: center;
-    gap: 10px;
+    column-gap: 12px;
     min-height: 44px;
     padding: 10px 14px;
     border-radius: 14px;
     color: var(--handled-primary);
 }
 
+body.handled-shell .sidebar-menu > li > a > .glyphicon,
+body.handled-shell .sidebar-menu > li > span > .glyphicon,
+body.handled-shell .sidebar-menu .dropdown-toggle > .glyphicon {
+    grid-column: 1;
+    width: 16px;
+    color: var(--handled-text-soft);
+    font-size: 13px;
+    text-align: center;
+}
+
+body.handled-shell .sidebar-menu .folder-name {
+    grid-column: 2;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+body.handled-shell .sidebar-menu .active-count {
+    grid-column: 3;
+    justify-self: end;
+    float: none !important;
+    min-width: 28px;
+    padding: 4px 8px;
+    border-radius: 999px;
+    background: rgba(96, 125, 159, 0.12);
+    color: var(--handled-primary);
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1.2;
+    text-align: center;
+}
+
 body.handled-shell .sidebar-menu > li.active > a,
 body.handled-shell .sidebar-menu > li > a:hover,
 body.handled-shell .sidebar-menu > li > a:focus {
     background: rgba(96, 125, 159, 0.12);
+    color: var(--handled-primary);
+}
+
+body.handled-shell .sidebar-menu > li.active > a > .glyphicon,
+body.handled-shell .sidebar-menu > li > a:hover > .glyphicon,
+body.handled-shell .sidebar-menu > li > a:focus > .glyphicon {
     color: var(--handled-primary);
 }
 

@@ -16,7 +16,6 @@
         <div>
             <div class="handled-eyebrow">Handled Support</div>
             <div class="heading">{{ __('Support workspace') }}@action('dashboard.heading_append')</div>
-            <p>{{ __('A wider operator view across inboxes, queues, and live customer conversations.') }}</p>
         </div>
         <div class="handled-hero-metrics">
             <div class="handled-metric-card">

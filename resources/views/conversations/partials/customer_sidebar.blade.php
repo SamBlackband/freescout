@@ -155,7 +155,7 @@
                     @endif
                 </dl>
             @else
-                <p class="handled-context-empty">{{ __('Handled CRM context is not linked for this conversation yet. Once the ticket lookup matches, business and ticket data will appear here.') }}</p>
+                <p class="handled-context-empty">{{ __('No Handled account is linked to this conversation yet.') }}</p>
             @endif
         </div>
         @if ($handled_setup || $handled_support_summary)
@@ -230,7 +230,7 @@
                     </div>
                 @endif
             @else
-                <p class="handled-context-empty">{{ __('No linked Handled ticket has been resolved for this conversation yet.') }}</p>
+                <p class="handled-context-empty">{{ __('No linked Handled ticket is available yet.') }}</p>
             @endif
         </div>
     </div>
