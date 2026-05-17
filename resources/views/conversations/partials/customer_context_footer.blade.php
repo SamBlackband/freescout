@@ -3,9 +3,12 @@
     $handled_setup = $handled_setup ?? (is_array($handled_support_context) ? ($handled_support_context['setup'] ?? null) : null);
     $handled_support_summary = $handled_support_summary ?? (is_array($handled_support_context) ? ($handled_support_context['support_summary'] ?? null) : null);
     $handled_ticket = $handled_ticket ?? (is_array($handled_support_context) ? ($handled_support_context['ticket'] ?? null) : null);
+    $customer_location = array_filter([$customer->city, $customer->state, $customer->getCountryName()]);
+    $websites = $customer->getWebsites();
+    $social_profiles = $customer->getSocialProfiles();
 @endphp
 
-@if ($handled_setup || $handled_support_summary || $handled_ticket)
+@if ($handled_setup || $handled_support_summary || $handled_ticket || $customer->company || $customer->job_title || $customer_location || $websites || $social_profiles || $customer->notes)
     <div class="handled-context-wide-panel handled-context-panel">
         <div class="handled-context-card-header">
             <div>
@@ -16,6 +19,56 @@
 
         <div class="handled-context-wide-grid">
             <div>
+                @if ($customer->company || $customer->job_title || $customer_location || $customer->address || $customer->zip || $websites || $social_profiles || $customer->notes)
+                    <div>
+                        <div class="handled-eyebrow">{{ __('Customer profile') }}</div>
+                        <h4>{{ __('Extended details') }}</h4>
+                        <dl class="handled-context-grid">
+                            @if ($customer->company)
+                                <div>
+                                    <dt>{{ __('Company') }}</dt>
+                                    <dd>{{ $customer->company }}</dd>
+                                </div>
+                            @endif
+                            @if ($customer->job_title)
+                                <div>
+                                    <dt>{{ __('Role') }}</dt>
+                                    <dd>{{ $customer->job_title }}</dd>
+                                </div>
+                            @endif
+                            @if ($customer_location)
+                                <div>
+                                    <dt>{{ __('Location') }}</dt>
+                                    <dd>{{ implode(', ', $customer_location) }}</dd>
+                                </div>
+                            @endif
+                            @if ($customer->address || $customer->zip)
+                                <div>
+                                    <dt>{{ __('Address') }}</dt>
+                                    <dd>{{ trim(($customer->address ? $customer->address : '').(($customer->address && $customer->zip) ? ', ' : '').($customer->zip ? $customer->zip : '')) }}</dd>
+                                </div>
+                            @endif
+                        </dl>
+                        @if ($websites || $social_profiles)
+                            <div class="handled-customer-links">
+                                @foreach ($websites as $website)
+                                    <a href="{{ $website }}" target="_blank">{{ parse_url($website, PHP_URL_HOST) ?: __('Website') }}</a>
+                                @endforeach
+                                @foreach ($social_profiles as $sp)
+                                    @php($formatted_social = App\Customer::formatSocialProfile($sp))
+                                    <a href="{{ $formatted_social['value_url'] }}" target="_blank">{{ $formatted_social['type_name'] }}</a>
+                                @endforeach
+                            </div>
+                        @endif
+                        @if ($customer->notes)
+                            <div class="handled-customer-note">{{ $customer->notes }}</div>
+                        @endif
+                        @action('customer.profile.extra', $customer, $conversation ?? '')
+                        @action('customer.profile_data', $customer, $conversation ?? '')
+                    </div>
+                @endif
+
+                <div class="handled-context-section">
                 <div class="handled-eyebrow">{{ __('Visibility') }}</div>
                 <h4>{{ __('Support + setup state') }}</h4>
                 @if ($handled_setup || $handled_support_summary)
@@ -44,6 +97,7 @@
                 @else
                     <p class="handled-context-empty">{{ __('No setup or support visibility data is available yet.') }}</p>
                 @endif
+                </div>
             </div>
 
             <div>

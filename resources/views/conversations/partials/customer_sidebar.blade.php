@@ -248,58 +248,8 @@
                         <li><span class="handled-customer-contact">{{ $phone['value'] }}</span></li>
                     @endforeach
                 </ul>
-                @if ($websites || $social_profiles)
-                    <div class="handled-customer-links">
-                        @foreach ($websites as $website)
-                            <a href="{{ $website }}" target="_blank">{{ parse_url($website, PHP_URL_HOST) ?: __('Website') }}</a>
-                        @endforeach
-                        @foreach ($social_profiles as $sp)
-                            @php($formatted_social = App\Customer::formatSocialProfile($sp))
-                            <a href="{{ $formatted_social['value_url'] }}" target="_blank">{{ $formatted_social['type_name'] }}</a>
-                        @endforeach
-                    </div>
-                @endif
-                @if ($customer->notes)
-                    <div class="handled-customer-note">{{ $customer->notes }}</div>
-                @endif
-                @action('customer.profile.extra', $customer, $conversation ?? '')
-                @action('customer.profile_data', $customer, $conversation ?? '')
             </div>
         </div>
-        @if ($customer->company || $customer->job_title || $customer_location)
-            <div class="handled-context-section">
-                <div>
-                    <div class="handled-eyebrow">{{ __('Business') }}</div>
-                    <h4>{{ __('Account details') }}</h4>
-                </div>
-                <dl class="handled-context-grid">
-                    @if ($customer->company)
-                        <div>
-                            <dt>{{ __('Company') }}</dt>
-                            <dd>{{ $customer->company }}</dd>
-                        </div>
-                    @endif
-                    @if ($customer->job_title)
-                        <div>
-                            <dt>{{ __('Role') }}</dt>
-                            <dd>{{ $customer->job_title }}</dd>
-                        </div>
-                    @endif
-                    @if ($customer_location)
-                        <div>
-                            <dt>{{ __('Location') }}</dt>
-                            <dd>{{ implode(', ', $customer_location) }}</dd>
-                        </div>
-                    @endif
-                    @if ($customer->address || $customer->zip)
-                        <div>
-                            <dt>{{ __('Address') }}</dt>
-                            <dd>{{ trim(($customer->address ? $customer->address : '').(($customer->address && $customer->zip) ? ', ' : '').($customer->zip ? $customer->zip : '')) }}</dd>
-                        </div>
-                    @endif
-                </dl>
-            </div>
-        @endif
         <div class="handled-context-section">
             <div>
                 <div class="handled-eyebrow">{{ __('Handled') }}</div>

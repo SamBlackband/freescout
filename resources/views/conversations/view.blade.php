@@ -47,6 +47,11 @@
             grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
         }
 
+        body.body-conv .handled-conversation-stack {
+            width: 100%;
+            min-width: 0;
+        }
+
         @media (max-width: 1100px) {
             body.body-conv .handled-context-wide-panel {
                 margin-top: 16px;
@@ -70,8 +75,9 @@
 @section('content')
     @include('partials/flash_messages')
 
-    <div id="conv-layout" class="conv-type-{{ strtolower($conversation->getTypeName()) }} @if ($is_following) conv-following @endif">
-        <div id="conv-layout-header">
+    <div class="handled-conversation-stack">
+        <div id="conv-layout" class="conv-type-{{ strtolower($conversation->getTypeName()) }} @if ($is_following) conv-following @endif">
+            <div id="conv-layout-header">
             <div id="conv-toolbar">
 
                 <div class="conv-actions">
@@ -393,29 +399,30 @@
             </div>
         </div>
 
-        <div id="conv-layout-customer">
-            @include('conversations/partials/customer_sidebar', [
-                'handled_support_context' => $handled_support_context,
-                'handled_business' => $handled_business,
-                'handled_setup' => $handled_setup,
-                'handled_support_summary' => $handled_support_summary,
-                'handled_ticket' => $handled_ticket,
-            ])
-            @action('conversation.after_customer_sidebar', $conversation)
+            <div id="conv-layout-customer">
+                @include('conversations/partials/customer_sidebar', [
+                    'handled_support_context' => $handled_support_context,
+                    'handled_business' => $handled_business,
+                    'handled_setup' => $handled_setup,
+                    'handled_support_summary' => $handled_support_summary,
+                    'handled_ticket' => $handled_ticket,
+                ])
+                @action('conversation.after_customer_sidebar', $conversation)
+            </div>
+            <div id="conv-layout-main">
+                @action('conversation.before_threads', $conversation)
+                @include('conversations/partials/threads')
+                @action('conversation.after_threads', $conversation)
+            </div>
         </div>
-        <div id="conv-layout-main">
-            @action('conversation.before_threads', $conversation)
-            @include('conversations/partials/threads')
-            @action('conversation.after_threads', $conversation)
-        </div>
+        @include('conversations/partials/customer_context_footer', [
+            'handled_support_context' => $handled_support_context,
+            'handled_business' => $handled_business,
+            'handled_setup' => $handled_setup,
+            'handled_support_summary' => $handled_support_summary,
+            'handled_ticket' => $handled_ticket,
+        ])
     </div>
-    @include('conversations/partials/customer_context_footer', [
-        'handled_support_context' => $handled_support_context,
-        'handled_business' => $handled_business,
-        'handled_setup' => $handled_setup,
-        'handled_support_summary' => $handled_support_summary,
-        'handled_ticket' => $handled_ticket,
-    ])
 @endsection
 
 @section('body_bottom')
