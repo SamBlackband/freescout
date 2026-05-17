@@ -61,9 +61,8 @@
                                 <i class="glyphicon glyphicon-arrow-left"></i>
                             </a>
                         @else
-                            <a class="navbar-brand" href="{{ route('dashboard') }}" title="{{ __('Dashboard') }}">
-                                <img src="@filter('layout.header_logo', asset('img/handled-wordmark.svg'))" height="100%" alt="{{ $app_name }}" />
-                                <span class="handled-navbar-label">{{ __('Support Ops') }}</span>
+                            <a class="navbar-brand handled-navbar-brandmark" href="{{ route('dashboard') }}" title="{{ __('Dashboard') }}">
+                                <img src="{{ asset('img/handled-mark.svg') }}" height="100%" alt="Handled" />
                             </a>
                         @endif
                     </div>
