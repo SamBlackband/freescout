@@ -32,6 +32,8 @@ chown "${NGINX_USER}":"${NGINX_GROUP}" "${CONFIG_FILE}"
 
 cd "${NGINX_WEBROOT}" || exit 1
 silent sudo -u "${NGINX_USER}" php artisan config:clear
+silent sudo -u "${NGINX_USER}" php artisan view:clear
+silent sudo -u "${NGINX_USER}" php artisan route:clear
 silent sudo -u "${NGINX_USER}" php artisan freescout:clear-cache
 
 liftoff
