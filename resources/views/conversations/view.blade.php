@@ -22,10 +22,6 @@
 @endsection
 
 @section('content')
-    @php
-        $conversation_channel = $conversation->getChannelName();
-        $conversation_waiting_since = $conversation->getWaitingSince();
-    @endphp
     @include('partials/flash_messages')
 
     <div id="conv-layout" class="conv-type-{{ strtolower($conversation->getTypeName()) }} @if ($is_following) conv-following @endif">
@@ -222,18 +218,6 @@
                             @endforeach
                         </div>
                     </div>
-                </div>
-                <div class="handled-case-strip">
-                    <span class="handled-case-pill handled-case-pill-primary">{{ $mailbox->name }}</span>
-                    <span class="handled-case-pill">{{ $conversation->getStatusName() }}</span>
-                    <span class="handled-case-pill">{{ __('Assignee') }}: {{ $conversation->getAssigneeName(true) }}</span>
-                    <span class="handled-case-pill">{{ $conversation->getTypeName() }}</span>
-                    @if ($conversation_channel)
-                        <span class="handled-case-pill">{{ $conversation_channel }}</span>
-                    @endif
-                    @if ($conversation_waiting_since)
-                        <span class="handled-case-pill">{{ __('Waiting') }}: {{ $conversation_waiting_since }}</span>
-                    @endif
                 </div>
                 @if ($is_in_chat_mode)
                     <div class="conv-top-block conv-top-chat clearfix">

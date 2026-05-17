@@ -43,7 +43,7 @@
 
     @yield('stylesheets')
 </head>
-<body class="handled-shell locale-{{ app()->getLocale() }} @if (Helper::isLocaleRtl()) rtl @endif @if (!Auth::user()) user-is-guest @endif @if (Auth::user() && Auth::user()->isAdmin()) user-is-admin @endif @yield('body_class') @action('body.class')" @yield('body_attrs') @if (Auth::user()) data-auth_user_id="{{ Auth::user()->id }}" @endif>
+<body class="locale-{{ app()->getLocale() }} @if (Helper::isLocaleRtl()) rtl @endif @if (!Auth::user()) user-is-guest @endif @if (Auth::user() && Auth::user()->isAdmin()) user-is-admin @endif @yield('body_class') @action('body.class')" @yield('body_attrs') @if (Auth::user()) data-auth_user_id="{{ Auth::user()->id }}" @endif>
 <div id="app">
 
         @if (Auth::user() && empty(app('request')->x_embed) && empty($__env->yieldContent('guest_mode')))
@@ -239,7 +239,7 @@
             <div class="alert alert-danger">{{ $browser_check['msg'] }}</div>
         @endif
         @if ($__env->yieldContent('sidebar'))
-            <div class="layout-2col handled-shell-layout">
+            <div class="layout-2col">
                 <div class="sidebar-2col">
                     @yield('sidebar')
                 </div>
@@ -248,7 +248,7 @@
                 </div>
             </div>
         @else
-            <div class="content handled-shell-content @yield('content_class')">
+            <div class="content @yield('content_class')">
                 @yield('content')
             </div>
         @endif

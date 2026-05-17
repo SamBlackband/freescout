@@ -34,58 +34,6 @@
             </div>
             @include('customers/profile_snippet', ['customer' => $customer, 'main_email' => $conversation->customer_email ?? '', 'conversation' => $conversation ?? null])
         </div>
-        @if (isset($conversation))
-            <div class="conv-sidebar-block handled-context-card">
-                <div class="handled-context-card-header">
-                    <div>
-                        <div class="handled-eyebrow">{{ __('Case') }}</div>
-                        <h4>#{{ $conversation->number }} {{ __('Overview') }}</h4>
-                    </div>
-                </div>
-                <dl class="handled-context-grid">
-                    <div>
-                        <dt>{{ __('Status') }}</dt>
-                        <dd>{{ $conversation->getStatusName() }}</dd>
-                    </div>
-                    <div>
-                        <dt>{{ __('Mailbox') }}</dt>
-                        <dd>{{ $mailbox->name ?? __('Shared inbox') }}</dd>
-                    </div>
-                    <div>
-                        <dt>{{ __('Assignee') }}</dt>
-                        <dd>{{ $conversation->getAssigneeName(true) }}</dd>
-                    </div>
-                    <div>
-                        <dt>{{ __('Type') }}</dt>
-                        <dd>{{ $conversation->getTypeName() }}</dd>
-                    </div>
-                    @if ($conversation->getChannelName())
-                        <div>
-                            <dt>{{ __('Channel') }}</dt>
-                            <dd>{{ $conversation->getChannelName() }}</dd>
-                        </div>
-                    @endif
-                    @if ($conversation->getWaitingSince())
-                        <div>
-                            <dt>{{ __('Waiting') }}</dt>
-                            <dd>{{ $conversation->getWaitingSince() }}</dd>
-                        </div>
-                    @endif
-                    <div>
-                        <dt>{{ __('Opened') }}</dt>
-                        <dd>{{ App\User::dateDiffForHumans($conversation->created_at) }}</dd>
-                    </div>
-                    <div>
-                        <dt>{{ __('Last touch') }}</dt>
-                        <dd>{{ App\User::dateDiffForHumans($conversation->last_reply_at ?: $conversation->updated_at) }}</dd>
-                    </div>
-                    <div>
-                        <dt>{{ __('History') }}</dt>
-                        <dd>{{ $previous_conversations_total }} {{ __('conversations') }}</dd>
-                    </div>
-                </dl>
-            </div>
-        @endif
         @if ($customer->company || $customer->job_title || $customer_location)
             <div class="conv-sidebar-block handled-context-card">
                 <div class="handled-context-card-header">
