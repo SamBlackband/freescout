@@ -7,6 +7,7 @@ var fs_send_reply_after_draft = false;
 var fs_autosave_note = true;
 var fs_connection_errors = 0;
 var fs_editor_change_timeout = -1;
+var fs_customer_sidebar_height_timeouts = [];
 // For how long to remember conversation note drafts
 var fs_keep_conversation_notes = 30; // days
 var fs_draft_autosave_period = 12; // seconds
@@ -322,11 +323,12 @@ $(document).ready(function(){
 		e.preventDefault();
 	});
 
-	// Dirty JS hack because there was no way found to expand outer container when sidebar grows.
-	if ($('#conv-layout-customer').length && $(window).outerWidth() >= 1100 && $('.conv-sidebar-block').length > 2) {
-		adjustCustomerSidebarHeight();
-		setTimeout(adjustCustomerSidebarHeight, 2000);
-	}                                                   
+	scheduleCustomerSidebarHeightAdjust();
+	$(window)
+		.off('load.fsCustomerSidebar resize.fsCustomerSidebar')
+		.on('load.fsCustomerSidebar resize.fsCustomerSidebar', function() {
+			scheduleCustomerSidebarHeightAdjust();
+		});
 });
 
 /*function applyVoidLinks()
@@ -1823,6 +1825,10 @@ function convEditorInit()
 			}, laroute.route('conversations.ajax'), function(response) {
 				if (isAjaxSuccess(response) && typeof(response.html) != "undefined") {
 					$('#conv-layout-customer').html(response.html);
+					$('#conv-layout-customer').find('img').one('load.fsCustomerSidebar error.fsCustomerSidebar', function() {
+						scheduleCustomerSidebarHeightAdjust();
+					});
+					scheduleCustomerSidebarHeightAdjust();
 				}
 			}, true, function() {
 				// Do nothing
@@ -5717,11 +5723,31 @@ function copyToClipboard(text) {
 
 function adjustCustomerSidebarHeight()
 {
+	if (!$('#conv-layout-customer').length || !$('#conv-layout').length || $(window).outerWidth() < 1100 || $('.conv-sidebar-block').length <= 2) {
+		return;
+	}
+
+	var layout = $('#conv-layout');
 	var sidebar_h = $('#conv-layout-customer')[0].scrollHeight;
 
-	if (sidebar_h > $('#conv-layout').height()) {
-		$('#conv-layout').css('min-height', (sidebar_h+20)+'px');
+	layout.css('min-height', '');
+
+	if (sidebar_h > layout.height()) {
+		layout.css('min-height', (sidebar_h+20)+'px');
 	}
+}
+
+function scheduleCustomerSidebarHeightAdjust()
+{
+	while (fs_customer_sidebar_height_timeouts.length) {
+		clearTimeout(fs_customer_sidebar_height_timeouts.pop());
+	}
+
+	adjustCustomerSidebarHeight();
+
+	[150, 600, 1500].forEach(function(delay) {
+		fs_customer_sidebar_height_timeouts.push(setTimeout(adjustCustomerSidebarHeight, delay));
+	});
 }
 
 function closeAllModals()

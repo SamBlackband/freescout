@@ -14,11 +14,6 @@
             overflow: visible;
         }
 
-        #conv-layout-customer {
-            position: static !important;
-            top: auto !important;
-        }
-
         .handled-context-card-header {
             display: flex;
             align-items: flex-start;
