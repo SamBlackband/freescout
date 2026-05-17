@@ -30,6 +30,9 @@ fi
 
 chown "${NGINX_USER}":"${NGINX_GROUP}" "${CONFIG_FILE}"
 
+chown -R "${NGINX_USER}":"${NGINX_GROUP}" "${NGINX_WEBROOT}/bootstrap/cache" "${NGINX_WEBROOT}/storage"
+chmod -R ug+rwX "${NGINX_WEBROOT}/bootstrap/cache" "${NGINX_WEBROOT}/storage"
+
 cd "${NGINX_WEBROOT}" || exit 1
 silent sudo -u "${NGINX_USER}" php artisan config:clear
 silent sudo -u "${NGINX_USER}" php artisan view:clear
