@@ -2,6 +2,11 @@
 
 @php
     $is_in_chat_mode = $conversation->isInChatMode();
+    $handled_support_context = isset($conversation) ? app(\App\Services\HandledSupportContextService::class)->lookupForConversation($conversation) : null;
+    $handled_business = is_array($handled_support_context) ? ($handled_support_context['business'] ?? null) : null;
+    $handled_setup = is_array($handled_support_context) ? ($handled_support_context['setup'] ?? null) : null;
+    $handled_support_summary = is_array($handled_support_context) ? ($handled_support_context['support_summary'] ?? null) : null;
+    $handled_ticket = is_array($handled_support_context) ? ($handled_support_context['ticket'] ?? null) : null;
 @endphp
 
 @section('title_full', '#'.$conversation->number.' '.$conversation->getSubject().($customer ? ' - '.$customer->getFullName(true) : ''))
@@ -26,6 +31,33 @@
 
         body.body-conv #conv-layout {
             display: flow-root;
+        }
+
+        body.body-conv .handled-context-wide-panel {
+            margin: 24px 0 0;
+            padding: 24px 28px 28px;
+            border-top: 1px solid rgba(216, 223, 230, 0.9);
+            background: #fff;
+            box-shadow: 0 0 10px rgba(0,0,0,.12);
+        }
+
+        body.body-conv .handled-context-wide-grid {
+            display: grid;
+            gap: 24px;
+            grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+        }
+
+        @media (max-width: 1100px) {
+            body.body-conv .handled-context-wide-panel {
+                margin-top: 16px;
+                padding: 20px;
+                box-shadow: none;
+                border-top: 1px solid rgba(216, 223, 230, 0.9);
+            }
+
+            body.body-conv .handled-context-wide-grid {
+                grid-template-columns: minmax(0, 1fr);
+            }
         }
     </style>
 @endsection
@@ -362,7 +394,13 @@
         </div>
 
         <div id="conv-layout-customer">
-            @include('conversations/partials/customer_sidebar')
+            @include('conversations/partials/customer_sidebar', [
+                'handled_support_context' => $handled_support_context,
+                'handled_business' => $handled_business,
+                'handled_setup' => $handled_setup,
+                'handled_support_summary' => $handled_support_summary,
+                'handled_ticket' => $handled_ticket,
+            ])
             @action('conversation.after_customer_sidebar', $conversation)
         </div>
         <div id="conv-layout-main">
@@ -371,6 +409,13 @@
             @action('conversation.after_threads', $conversation)
         </div>
     </div>
+    @include('conversations/partials/customer_context_footer', [
+        'handled_support_context' => $handled_support_context,
+        'handled_business' => $handled_business,
+        'handled_setup' => $handled_setup,
+        'handled_support_summary' => $handled_support_summary,
+        'handled_ticket' => $handled_ticket,
+    ])
 @endsection
 
 @section('body_bottom')

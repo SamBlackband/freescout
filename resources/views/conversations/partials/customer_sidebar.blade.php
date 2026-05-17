@@ -1,11 +1,11 @@
 @if (!empty($customer))
     @php
-        $customer_location = array_filter([$customer->city, $customer->state, $customer->getCountryName()]);
-        $handled_support_context = isset($conversation) ? app(\App\Services\HandledSupportContextService::class)->lookupForConversation($conversation) : null;
-        $handled_business = is_array($handled_support_context) ? ($handled_support_context['business'] ?? null) : null;
-        $handled_setup = is_array($handled_support_context) ? ($handled_support_context['setup'] ?? null) : null;
-        $handled_support_summary = is_array($handled_support_context) ? ($handled_support_context['support_summary'] ?? null) : null;
-        $handled_ticket = is_array($handled_support_context) ? ($handled_support_context['ticket'] ?? null) : null;
+        $customer_location = $customer_location ?? array_filter([$customer->city, $customer->state, $customer->getCountryName()]);
+        $handled_support_context = $handled_support_context ?? (isset($conversation) ? app(\App\Services\HandledSupportContextService::class)->lookupForConversation($conversation) : null);
+        $handled_business = $handled_business ?? (is_array($handled_support_context) ? ($handled_support_context['business'] ?? null) : null);
+        $handled_setup = $handled_setup ?? (is_array($handled_support_context) ? ($handled_support_context['setup'] ?? null) : null);
+        $handled_support_summary = $handled_support_summary ?? (is_array($handled_support_context) ? ($handled_support_context['support_summary'] ?? null) : null);
+        $handled_ticket = $handled_ticket ?? (is_array($handled_support_context) ? ($handled_support_context['ticket'] ?? null) : null);
     @endphp
     <style {!! \Helper::cspNonceAttr() !!}>
         .handled-context-panel {
@@ -340,36 +340,6 @@
                 <p class="handled-context-empty">{{ __('No Handled account is linked to this conversation yet.') }}</p>
             @endif
         </div>
-        @if ($handled_setup || $handled_support_summary)
-            <div class="handled-context-section">
-                <div>
-                    <div class="handled-eyebrow">{{ __('Visibility') }}</div>
-                    <h4>{{ __('Support + setup state') }}</h4>
-                </div>
-                <dl class="handled-context-grid">
-                    @if ($handled_support_summary)
-                        <div>
-                            <dt>{{ __('Active tickets') }}</dt>
-                            <dd>{{ $handled_support_summary['active_tickets_total'] ?? 0 }}</dd>
-                        </div>
-                        <div>
-                            <dt>{{ __('Ticket history') }}</dt>
-                            <dd>{{ $handled_support_summary['tickets_total'] ?? 0 }}</dd>
-                        </div>
-                    @endif
-                    @if ($handled_setup)
-                        <div>
-                            <dt>{{ __('Setup progress') }}</dt>
-                            <dd>{{ $handled_setup['completion_percentage'] ?? 0 }}%</dd>
-                        </div>
-                        <div>
-                            <dt>{{ __('Next gap') }}</dt>
-                            <dd>{{ $handled_setup['first_incomplete'] ?? __('Complete') }}</dd>
-                        </div>
-                    @endif
-                </dl>
-            </div>
-        @endif
         <div class="handled-context-section">
             <div>
                 <div class="handled-eyebrow">{{ __('Linked ticket') }}</div>
@@ -394,19 +364,6 @@
                         <dd>{{ $handled_ticket['sync_status'] ?? '—' }}</dd>
                     </div>
                 </dl>
-                @if (!empty($handled_ticket['messages']) && is_array($handled_ticket['messages']))
-                    <div class="handled-support-timeline">
-                        @foreach ($handled_ticket['messages'] as $handled_message)
-                            <div class="handled-support-timeline-item">
-                                <div class="handled-support-timeline-meta">
-                                    <strong>{{ ($handled_message['direction'] ?? '') === 'outbound' ? __('Support reply') : __('Customer message') }}</strong>
-                                    <span>{{ $handled_message['created_at'] ?? '' }}</span>
-                                </div>
-                                <p>{{ $handled_message['preview'] ?? $handled_message['body_text'] ?? '' }}</p>
-                            </div>
-                        @endforeach
-                    </div>
-                @endif
             @else
                 <p class="handled-context-empty">{{ __('No linked Handled ticket is available yet.') }}</p>
             @endif
