@@ -7,6 +7,162 @@
         $handled_support_summary = is_array($handled_support_context) ? ($handled_support_context['support_summary'] ?? null) : null;
         $handled_ticket = is_array($handled_support_context) ? ($handled_support_context['ticket'] ?? null) : null;
     @endphp
+    <style {!! \Helper::cspNonceAttr() !!}>
+        .handled-context-panel {
+            padding-bottom: 18px;
+            overflow: visible;
+        }
+
+        .handled-context-card-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 16px;
+            margin-bottom: 14px;
+        }
+
+        .handled-context-section {
+            margin-top: 18px;
+            padding-top: 18px;
+            border-top: 1px solid rgba(216, 223, 230, 0.9);
+        }
+
+        .handled-customer-summary .customer-snippet {
+            display: flex;
+            align-items: flex-start;
+            min-height: 0;
+            gap: 16px;
+        }
+
+        .handled-customer-summary .customer-photo-container {
+            flex: 0 0 auto;
+            float: none;
+            width: auto;
+            max-width: none;
+            height: auto;
+            margin: 0;
+        }
+
+        .handled-customer-summary .customer-photo {
+            width: 64px;
+            height: 64px;
+            max-width: none;
+            max-height: none;
+            border: 3px solid #e6eef7;
+            object-fit: cover;
+        }
+
+        .handled-customer-summary .customer-data {
+            flex: 1 1 auto;
+            min-width: 0;
+            margin: 0;
+            padding: 0;
+        }
+
+        .handled-customer-summary .customer-name {
+            display: block;
+            float: none;
+            margin: 0 0 8px;
+            color: #0f1923;
+            font-size: 20px;
+            font-weight: 700;
+            line-height: 1.2;
+        }
+
+        .handled-customer-summary .customer-tags .fs-tag {
+            margin-right: 6px;
+            margin-bottom: 6px;
+        }
+
+        .handled-customer-summary .customer-contacts {
+            margin: 0;
+            padding-top: 0;
+        }
+
+        .handled-customer-summary .customer-contacts li {
+            display: block;
+        }
+
+        .handled-customer-summary .customer-contacts li + li {
+            margin-top: 4px;
+        }
+
+        .handled-customer-summary .customer-extra {
+            margin-top: 12px;
+        }
+
+        .handled-customer-summary .customer-social-profiles {
+            position: static;
+            max-width: none;
+            margin: 8px 0 0;
+            overflow: visible;
+            white-space: normal;
+        }
+
+        .handled-context-grid {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr);
+            gap: 12px;
+            margin: 0;
+        }
+
+        .handled-context-grid > div {
+            min-width: 0;
+        }
+
+        .handled-context-grid dt {
+            margin-bottom: 5px;
+            color: #5f6f82;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: .08em;
+            text-transform: uppercase;
+        }
+
+        .handled-context-grid dd {
+            margin: 0;
+            color: #0f1923;
+            font-size: 14px;
+            font-weight: 600;
+            line-height: 1.4;
+        }
+
+        .handled-support-timeline {
+            margin-top: 14px;
+            display: grid;
+            gap: 12px;
+        }
+
+        .handled-support-timeline-item {
+            padding: 0;
+            border: 0;
+            border-radius: 0;
+            background: transparent;
+        }
+
+        .handled-support-timeline-item + .handled-support-timeline-item {
+            padding-top: 12px;
+            border-top: 1px solid rgba(216, 223, 230, 0.75);
+        }
+
+        .handled-support-timeline-meta {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            margin-bottom: 4px;
+            color: #5f6f82;
+            font-size: 12px;
+        }
+
+        .handled-support-timeline-item p,
+        .handled-context-empty {
+            margin: 0;
+            color: #0f1923;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+    </style>
     <div class="conv-customer-header"></div>
     <div class="conv-customer-block conv-sidebar-block handled-context-panel handled-customer-summary">
         <div class="handled-context-card-header">
