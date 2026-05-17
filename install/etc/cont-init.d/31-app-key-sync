@@ -6,12 +6,15 @@ PROCESS_NAME="freescout-app-key-sync"
 
 check_service_initialized init 30-freescout
 
-CONFIG_FILE="${NGINX_WEBROOT}/.env"
-if [ -f "/data/config" ]; then
-    CONFIG_FILE="/data/config"
-fi
+CONFIG_FILE=""
+for candidate in "/data/config/.env" "/data/config" "${NGINX_WEBROOT}/.env"; do
+    if [ -f "${candidate}" ]; then
+        CONFIG_FILE="${candidate}"
+        break
+    fi
+done
 
-if [ -f "${CONFIG_FILE}" ]; then
+if [ -n "${CONFIG_FILE}" ] && [ -f "${CONFIG_FILE}" ]; then
     if [ -n "${APP_KEY}" ]; then
         print_info "Syncing APP_KEY into ${CONFIG_FILE}"
         if grep -q "^APP_KEY=" "${CONFIG_FILE}" > /dev/null 2>&1; then
@@ -24,7 +27,7 @@ if [ -f "${CONFIG_FILE}" ]; then
         print_warn "APP_KEY not set - leaving FreeScout key unchanged"
     fi
 else
-    print_warn "FreeScout env file not found at ${CONFIG_FILE} - skipping APP_KEY sync"
+    print_warn "FreeScout env file not found in /data/config/.env, /data/config, or ${NGINX_WEBROOT}/.env - skipping APP_KEY sync"
 fi
 
 chown -R "${NGINX_USER}":"${NGINX_GROUP}" "${NGINX_WEBROOT}/bootstrap/cache" "${NGINX_WEBROOT}/storage"
