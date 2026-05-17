@@ -16,6 +16,20 @@
 
 @section('body_attrs')@parent data-conversation_id="{{ $conversation->id }}"@endsection
 
+@section('stylesheets')
+    @parent
+    <style {!! \Helper::cspNonceAttr() !!}>
+        body.body-conv #app {
+            overflow-x: hidden;
+            overflow-y: visible;
+        }
+
+        body.body-conv #conv-layout {
+            display: flow-root;
+        }
+    </style>
+@endsection
+
 @section('sidebar')
     @include('partials/sidebar_menu_toggle')
     @include('mailboxes/sidebar_menu_view')
