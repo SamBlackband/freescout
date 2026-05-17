@@ -23,6 +23,8 @@ COPY webpack.mix.js /www/html/webpack.mix.js
 COPY .env.example /www/html/.env.example
 
 COPY install/ /
-RUN chmod +x /etc/cont-init.d/31-app-key-sync
+RUN chmod +x /etc/cont-init.d/31-app-key-sync \
+    && chown -R nginx:nginx /www/html \
+    && chmod -R ug+rwX /www/html/bootstrap/cache /www/html/storage
 
 EXPOSE 80
