@@ -21,7 +21,7 @@
     @action('layout.head')
     {{-- Styles --}}
     {{-- Conversation page must open immediately, so we are loading scripts present on conversation page --}}
-    {{-- handled.css is loaded separately with a versioned asset URL so UI changes propagate immediately --}}
+    {{-- handled.css is loaded separately with a hard cache-buster while the UI is being tuned --}}
     @php
         try {
             $styles= array('/css/fonts.css', '/css/bootstrap.css', '/css/select2/select2.min.css', '/js/featherlight/featherlight.min.css', '/js/featherlight/featherlight.gallery.min.css', '/css/magic-check.css', '/css/style.css' );
@@ -29,8 +29,7 @@
                 $styles[] = '/css/bootstrap-rtl.css';
                 $styles[] = '/css/style-rtl.css';
             }
-            $handled_css_path = public_path('css/handled.css');
-            $handled_css_version = file_exists($handled_css_path) ? filemtime($handled_css_path) : config('app.version');
+            $handled_css_version = time();
     @endphp
     {!! Minify::stylesheet(\Eventy::filter('stylesheets', $styles)) !!}
     <link rel="stylesheet" href="{{ asset('css/handled.css') }}?v={{ $handled_css_version }}">
