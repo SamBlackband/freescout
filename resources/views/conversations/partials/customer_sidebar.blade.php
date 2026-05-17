@@ -27,41 +27,32 @@
             border-top: 1px solid rgba(216, 223, 230, 0.9);
         }
 
-        .handled-customer-summary .customer-snippet {
+        .handled-customer-summary .handled-customer-identity {
             display: flex;
             align-items: flex-start;
-            min-height: 0;
             gap: 16px;
         }
 
-        .handled-customer-summary .customer-photo-container {
+        .handled-customer-summary .handled-customer-avatar {
             flex: 0 0 auto;
-            float: none;
-            width: auto;
-            max-width: none;
-            height: auto;
-            margin: 0;
         }
 
-        .handled-customer-summary .customer-photo {
+        .handled-customer-summary .handled-customer-avatar img {
+            display: block;
             width: 64px;
             height: 64px;
-            max-width: none;
-            max-height: none;
             border: 3px solid #e6eef7;
+            border-radius: 50%;
             object-fit: cover;
         }
 
-        .handled-customer-summary .customer-data {
+        .handled-customer-summary .handled-customer-primary {
             flex: 1 1 auto;
             min-width: 0;
-            margin: 0;
-            padding: 0;
         }
 
-        .handled-customer-summary .customer-name {
+        .handled-customer-summary .handled-customer-name {
             display: block;
-            float: none;
             margin: 0 0 8px;
             color: #0f1923;
             font-size: 20px;
@@ -69,34 +60,33 @@
             line-height: 1.2;
         }
 
-        .handled-customer-summary .customer-tags .fs-tag {
+        .handled-customer-summary .handled-customer-channels {
+            margin-bottom: 8px;
+        }
+
+        .handled-customer-summary .handled-customer-channels .fs-tag {
             margin-right: 6px;
             margin-bottom: 6px;
         }
 
-        .handled-customer-summary .customer-contacts {
+        .handled-customer-summary .handled-customer-contacts {
             margin: 0;
-            padding-top: 0;
+            padding: 0;
+            list-style: none;
         }
 
-        .handled-customer-summary .customer-contacts li {
+        .handled-customer-summary .handled-customer-contacts li {
             display: block;
         }
 
-        .handled-customer-summary .customer-contacts li + li {
+        .handled-customer-summary .handled-customer-contacts li + li {
             margin-top: 4px;
         }
 
-        .handled-customer-summary .customer-extra {
-            margin-top: 12px;
-        }
-
-        .handled-customer-summary .customer-social-profiles {
-            position: static;
-            max-width: none;
-            margin: 8px 0 0;
-            overflow: visible;
-            white-space: normal;
+        .handled-customer-summary .handled-customer-contact {
+            color: #0f1923;
+            font-size: 13px;
+            line-height: 1.45;
         }
 
         .handled-context-grid {
@@ -186,7 +176,49 @@
                 </div>
             @endif
         </div>
-        @include('customers/profile_snippet', ['customer' => $customer, 'main_email' => $conversation->customer_email ?? '', 'conversation' => $conversation ?? null])
+        @php
+            $channels = $customer->getChannels();
+            $phones = $customer->getPhones();
+            $ordered_emails = [];
+            if (!empty($conversation->customer_email)) {
+                foreach ($customer->emails as $email) {
+                    if ($email->email == $conversation->customer_email) {
+                        $ordered_emails[] = $email->email;
+                    }
+                }
+            }
+            foreach ($customer->emails as $email) {
+                if (!in_array($email->email, $ordered_emails, true)) {
+                    $ordered_emails[] = $email->email;
+                }
+            }
+        @endphp
+        <div class="handled-customer-identity">
+            <div class="handled-customer-avatar">
+                <img src="{{ $customer->getPhotoUrl() }}" alt="">
+            </div>
+            <div class="handled-customer-primary">
+                @if ($customer->getFullName(true, true))
+                    <a href="{{ route('customers.update', ['id' => $customer->id]) }}" class="handled-customer-name">{{ $customer->getFullName(true, true) }}</a>
+                @endif
+                @if (count($channels))
+                    <div class="handled-customer-channels">
+                        @foreach ($channels as $channel)
+                            <span class="fs-tag"><span class="fs-tag-name">{{ $channel->getChannelName() }}</span></span>
+                        @endforeach
+                        {{ '' }}@action('customer.tags', $customer, $conversation ?? null)
+                    </div>
+                @endif
+                <ul class="handled-customer-contacts">
+                    @foreach ($ordered_emails as $email_value)
+                        <li><span class="handled-customer-contact">{{ $email_value }}</span></li>
+                    @endforeach
+                    @foreach ($phones as $phone)
+                        <li><span class="handled-customer-contact">{{ $phone['value'] }}</span></li>
+                    @endforeach
+                </ul>
+            </div>
+        </div>
         @if ($customer->company || $customer->job_title || $customer_location)
             <div class="handled-context-section">
                 <div>
