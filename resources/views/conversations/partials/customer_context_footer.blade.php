@@ -34,101 +34,130 @@
                     </div>
                 </div>
 
-                @if ($customer->company || $customer->job_title || $customer_location || $customer->address || $customer->zip || $ordered_emails || $phones || $websites || $social_profiles || $customer->notes)
-                    <div>
-                        <div class="handled-eyebrow">{{ __('Customer profile') }}</div>
-                        <h4>{{ __('Extended details') }}</h4>
-                        <dl class="handled-context-grid">
-                            @if ($ordered_emails)
-                                <div>
-                                    <dt>{{ __('Emails') }}</dt>
-                                    <dd>{{ implode(', ', $ordered_emails) }}</dd>
-                                </div>
-                            @endif
-                            @if ($phones)
-                                <div>
-                                    <dt>{{ __('Phones') }}</dt>
-                                    <dd>{{ implode(', ', array_column($phones, 'value')) }}</dd>
-                                </div>
-                            @endif
-                            @if ($customer->company)
-                                <div>
-                                    <dt>{{ __('Company') }}</dt>
-                                    <dd>{{ $customer->company }}</dd>
-                                </div>
-                            @endif
-                            @if ($customer->job_title)
-                                <div>
-                                    <dt>{{ __('Role') }}</dt>
-                                    <dd>{{ $customer->job_title }}</dd>
-                                </div>
-                            @endif
-                            @if ($customer_location)
-                                <div>
-                                    <dt>{{ __('Location') }}</dt>
-                                    <dd>{{ implode(', ', $customer_location) }}</dd>
-                                </div>
-                            @endif
-                            @if ($customer->address || $customer->zip)
-                                <div>
-                                    <dt>{{ __('Address') }}</dt>
-                                    <dd>{{ trim(($customer->address ? $customer->address : '').(($customer->address && $customer->zip) ? ', ' : '').($customer->zip ? $customer->zip : '')) }}</dd>
-                                </div>
-                            @endif
-                        </dl>
-                        @if ($websites || $social_profiles)
-                            <div class="handled-customer-links">
-                                @foreach ($websites as $website)
-                                    <a href="{{ $website }}" target="_blank">{{ parse_url($website, PHP_URL_HOST) ?: __('Website') }}</a>
-                                @endforeach
-                                @foreach ($social_profiles as $sp)
-                                    @php($formatted_social = App\Customer::formatSocialProfile($sp))
-                                    <a href="{{ $formatted_social['value_url'] }}" target="_blank">{{ $formatted_social['type_name'] }}</a>
-                                @endforeach
+                @if ($handled_business || $handled_support_summary || $handled_setup)
+                    <div class="handled-context-metrics">
+                        @if ($handled_business)
+                            <div class="handled-context-metric">
+                                <span class="handled-context-metric-label">{{ __('Business') }}</span>
+                                <span class="handled-context-metric-value">{{ $handled_business['name'] ?? '—' }}</span>
+                            </div>
+                            <div class="handled-context-metric">
+                                <span class="handled-context-metric-label">{{ __('Owner') }}</span>
+                                <span class="handled-context-metric-value">{{ $handled_business['owner_name'] ?? '—' }}</span>
                             </div>
                         @endif
-                        @if ($customer->notes)
-                            <div class="handled-customer-note">{{ $customer->notes }}</div>
+                        @if ($handled_support_summary)
+                            <div class="handled-context-metric">
+                                <span class="handled-context-metric-label">{{ __('Active tickets') }}</span>
+                                <span class="handled-context-metric-value">{{ $handled_support_summary['active_tickets_total'] ?? 0 }}</span>
+                            </div>
                         @endif
-                        @action('customer.profile.extra', $customer, $conversation ?? '')
-                        @action('customer.profile_data', $customer, $conversation ?? '')
+                        @if ($handled_setup)
+                            <div class="handled-context-metric">
+                                <span class="handled-context-metric-label">{{ __('Setup progress') }}</span>
+                                <span class="handled-context-metric-value">{{ $handled_setup['completion_percentage'] ?? 0 }}%</span>
+                            </div>
+                        @endif
                     </div>
                 @endif
 
-                @if ($handled_business && (!empty($handled_business['plan_tier']) || !empty($handled_business['brand_id']) || !empty($handled_business['instagram_handle']) || !empty($handled_business['booking_url'])))
-                    <div class="handled-context-section">
-                        <div class="handled-eyebrow">{{ __('Handled account') }}</div>
-                        <h4>{{ __('Extended account details') }}</h4>
-                        <dl class="handled-context-grid">
-                            @if (!empty($handled_business['plan_tier']))
-                                <div>
-                                    <dt>{{ __('Plan') }}</dt>
-                                    <dd>{{ $handled_business['plan_tier'] }}</dd>
+                <div class="handled-context-detail-grid">
+                    @if ($customer->company || $customer->job_title || $customer_location || $customer->address || $customer->zip || $ordered_emails || $phones || $websites || $social_profiles || $customer->notes)
+                        <div>
+                            <div class="handled-eyebrow">{{ __('Customer profile') }}</div>
+                            <h4>{{ __('Extended details') }}</h4>
+                            <dl class="handled-context-grid">
+                                @if ($ordered_emails)
+                                    <div>
+                                        <dt>{{ __('Emails') }}</dt>
+                                        <dd>{{ implode(', ', $ordered_emails) }}</dd>
+                                    </div>
+                                @endif
+                                @if ($phones)
+                                    <div>
+                                        <dt>{{ __('Phones') }}</dt>
+                                        <dd>{{ implode(', ', array_column($phones, 'value')) }}</dd>
+                                    </div>
+                                @endif
+                                @if ($customer->company)
+                                    <div>
+                                        <dt>{{ __('Company') }}</dt>
+                                        <dd>{{ $customer->company }}</dd>
+                                    </div>
+                                @endif
+                                @if ($customer->job_title)
+                                    <div>
+                                        <dt>{{ __('Role') }}</dt>
+                                        <dd>{{ $customer->job_title }}</dd>
+                                    </div>
+                                @endif
+                                @if ($customer_location)
+                                    <div>
+                                        <dt>{{ __('Location') }}</dt>
+                                        <dd>{{ implode(', ', $customer_location) }}</dd>
+                                    </div>
+                                @endif
+                                @if ($customer->address || $customer->zip)
+                                    <div>
+                                        <dt>{{ __('Address') }}</dt>
+                                        <dd>{{ trim(($customer->address ? $customer->address : '').(($customer->address && $customer->zip) ? ', ' : '').($customer->zip ? $customer->zip : '')) }}</dd>
+                                    </div>
+                                @endif
+                            </dl>
+                            @if ($websites || $social_profiles)
+                                <div class="handled-customer-links">
+                                    @foreach ($websites as $website)
+                                        <a href="{{ $website }}" target="_blank">{{ parse_url($website, PHP_URL_HOST) ?: __('Website') }}</a>
+                                    @endforeach
+                                    @foreach ($social_profiles as $sp)
+                                        @php($formatted_social = App\Customer::formatSocialProfile($sp))
+                                        <a href="{{ $formatted_social['value_url'] }}" target="_blank">{{ $formatted_social['type_name'] }}</a>
+                                    @endforeach
                                 </div>
                             @endif
-                            @if (!empty($handled_business['brand_id']))
-                                <div>
-                                    <dt>{{ __('Brand') }}</dt>
-                                    <dd>{{ $handled_business['brand_id'] }}</dd>
-                                </div>
+                            @if ($customer->notes)
+                                <div class="handled-customer-note">{{ $customer->notes }}</div>
                             @endif
-                            @if (!empty($handled_business['instagram_handle']))
-                                <div>
-                                    <dt>{{ __('Instagram') }}</dt>
-                                    <dd>{{ $handled_business['instagram_handle'] }}</dd>
-                                </div>
-                            @endif
-                            @if (!empty($handled_business['booking_url']))
-                                <div>
-                                    <dt>{{ __('Booking') }}</dt>
-                                    <dd><a class="handled-context-link" href="{{ $handled_business['booking_url'] }}" target="_blank">{{ __('Open link') }}</a></dd>
-                                </div>
-                            @endif
-                        </dl>
-                    </div>
-                @endif
+                            @action('customer.profile.extra', $customer, $conversation ?? '')
+                            @action('customer.profile_data', $customer, $conversation ?? '')
+                        </div>
+                    @endif
 
-                <div class="handled-context-section">
+                    <div>
+                        @if ($handled_business && (!empty($handled_business['plan_tier']) || !empty($handled_business['brand_id']) || !empty($handled_business['instagram_handle']) || !empty($handled_business['booking_url'])))
+                            <div>
+                                <div class="handled-eyebrow">{{ __('Handled account') }}</div>
+                                <h4>{{ __('Extended account details') }}</h4>
+                                <dl class="handled-context-grid">
+                                    @if (!empty($handled_business['plan_tier']))
+                                        <div>
+                                            <dt>{{ __('Plan') }}</dt>
+                                            <dd>{{ $handled_business['plan_tier'] }}</dd>
+                                        </div>
+                                    @endif
+                                    @if (!empty($handled_business['brand_id']))
+                                        <div>
+                                            <dt>{{ __('Brand') }}</dt>
+                                            <dd>{{ $handled_business['brand_id'] }}</dd>
+                                        </div>
+                                    @endif
+                                    @if (!empty($handled_business['instagram_handle']))
+                                        <div>
+                                            <dt>{{ __('Instagram') }}</dt>
+                                            <dd>{{ $handled_business['instagram_handle'] }}</dd>
+                                        </div>
+                                    @endif
+                                    @if (!empty($handled_business['booking_url']))
+                                        <div>
+                                            <dt>{{ __('Booking') }}</dt>
+                                            <dd><a class="handled-context-link" href="{{ $handled_business['booking_url'] }}" target="_blank">{{ __('Open link') }}</a></dd>
+                                        </div>
+                                    @endif
+                                </dl>
+                            </div>
+                        @endif
+
+                        <div class="handled-context-section">
                     <div class="handled-eyebrow">{{ __('Visibility') }}</div>
                     <h4>{{ __('Support + setup state') }}</h4>
                     @if ($handled_setup || $handled_support_summary)
@@ -157,6 +186,8 @@
                     @else
                         <p class="handled-context-empty">{{ __('No setup or support visibility data is available yet.') }}</p>
                     @endif
+                        </div>
+                    </div>
                 </div>
             </section>
 

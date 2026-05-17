@@ -42,7 +42,7 @@
         body.body-conv .handled-conversation-footer-grid {
             display: grid;
             gap: 20px;
-            grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+            grid-template-columns: minmax(0, 1fr);
         }
 
         body.body-conv .handled-conversation-stack {
@@ -55,13 +55,52 @@
             margin: 0;
             padding: 24px 28px 28px;
             border: 1px solid rgba(216, 223, 230, 0.9);
-            border-radius: 20px;
+            border-radius: 0;
             background: #fff;
             box-shadow: 0 12px 30px rgba(15, 25, 35, 0.08);
         }
 
         body.body-conv .handled-conversation-footer .handled-history-card {
-            border-radius: 20px;
+            border-radius: 0;
+        }
+
+        body.body-conv .handled-context-metrics {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 14px;
+            margin-top: 18px;
+        }
+
+        body.body-conv .handled-context-metric {
+            padding: 14px 16px;
+            border: 1px solid rgba(216, 223, 230, 0.9);
+            border-radius: 0;
+            background: #f8fafc;
+        }
+
+        body.body-conv .handled-context-metric-label {
+            display: block;
+            margin-bottom: 6px;
+            color: #5f6f82;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: .08em;
+            text-transform: uppercase;
+        }
+
+        body.body-conv .handled-context-metric-value {
+            display: block;
+            color: #0f1923;
+            font-size: 18px;
+            font-weight: 700;
+            line-height: 1.2;
+        }
+
+        body.body-conv .handled-context-detail-grid {
+            display: grid;
+            gap: 20px;
+            grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+            margin-top: 20px;
         }
 
         @media (max-width: 1100px) {
@@ -77,6 +116,11 @@
             body.body-conv .handled-conversation-footer .conv-sidebar-block {
                 padding: 20px;
                 box-shadow: none;
+            }
+
+            body.body-conv .handled-context-metrics,
+            body.body-conv .handled-context-detail-grid {
+                grid-template-columns: minmax(0, 1fr);
             }
         }
     </style>

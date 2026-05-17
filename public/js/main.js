@@ -5729,7 +5729,13 @@ function adjustCustomerSidebarHeight()
 
 	var layout = $('#conv-layout');
 	var sidebar = $('#conv-layout-customer');
+	var header = $('#conv-layout-header');
+	var main = $('#conv-layout-main');
 	var sidebar_h = 0;
+	var layout_h = Math.max(
+		layout.height(),
+		(header.length ? header.outerHeight(true) : 0) + (main.length ? main.outerHeight(true) : 0)
+	);
 
 	sidebar.children(':visible').each(function() {
 		sidebar_h += $(this).outerHeight(true);
@@ -5739,8 +5745,8 @@ function adjustCustomerSidebarHeight()
 
 	layout.css('min-height', '');
 
-	if (sidebar_h > layout.height()) {
-		layout.css('min-height', (sidebar_h+20)+'px');
+	if (sidebar_h > layout_h) {
+		layout.css('min-height', (sidebar_h+32)+'px');
 	}
 }
 
