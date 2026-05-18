@@ -10,8 +10,12 @@
     <style {!! \Helper::cspNonceAttr() !!}>
         .handled-context-panel {
             display: flow-root;
-            padding-bottom: 18px;
+            padding-bottom: 24px;
             overflow: visible;
+        }
+
+        .handled-customer-summary.conv-sidebar-block {
+            margin-bottom: 0;
         }
 
         .handled-context-card-header {
@@ -186,8 +190,7 @@
     <div class="conv-customer-block conv-sidebar-block handled-context-panel handled-customer-summary">
         <div class="handled-context-card-header">
             <div>
-                <div class="handled-eyebrow">{{ __('Customer') }}</div>
-                <h3>{{ __('Customer context') }}</h3>
+                <h3>{{ __('Customer') }}</h3>
             </div>
             @if (isset($conversation))
                 <div class="dropdown customer-trigger" data-toggle="tooltip" title="{{ __("Settings") }}">
