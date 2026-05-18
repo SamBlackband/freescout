@@ -64,7 +64,10 @@
     $handled_customer_email = !empty($conversation->customer_email) ? $conversation->customer_email : ($ordered_emails[0] ?? null);
     $handled_responses_paused = !empty($handled_business['responses_paused']);
     $handled_support_writeback_visible = (bool) config('app.handled_support_writeback_ui_enabled');
-    $handled_support_action_enabled = $handled_support_writeback_visible && !empty($handled_business_id) && !empty($conversation->id);
+    $handled_support_activity_visible = $handled_support_writeback_visible && (bool) config('app.handled_support_writeback_activity_enabled');
+    $handled_support_actions_visible = $handled_support_writeback_visible && (bool) config('app.handled_support_writeback_actions_enabled');
+    $handled_support_action_js_enabled = $handled_support_actions_visible && (bool) config('app.handled_support_writeback_action_js_enabled');
+    $handled_support_action_enabled = $handled_support_action_js_enabled && !empty($handled_business_id) && !empty($conversation->id);
 @endphp
 
 @if ($handled_business || $handled_business_metrics || $handled_owner || $handled_account_health || $handled_diagnostics || $handled_history || $handled_actions || $handled_setup || $handled_support_summary || $handled_ticket || $handled_activity || $customer->company || $customer->job_title || $customer_location || $websites || $social_profiles || $customer->notes)
@@ -396,48 +399,52 @@
                 @endif
 
                 <div class="handled-context-detail-grid">
-                    <section class="handled-context-subcard">
-                        <div class="handled-eyebrow">{{ __('Writeback actions') }}</div>
-                        <h4>{{ __('Backend-managed controls') }}</h4>
-                        <dl class="handled-context-grid">
-                            <div>
-                                <dt>{{ __('Responses paused') }}</dt>
-                                <dd>{{ $handled_responses_paused ? __('Yes') : __('No') }}</dd>
-                            </div>
-                            @if ($handled_customer_email)
+                    @if ($handled_support_actions_visible)
+                        <section class="handled-context-subcard">
+                            <div class="handled-eyebrow">{{ __('Writeback actions') }}</div>
+                            <h4>{{ __('Backend-managed controls') }}</h4>
+                            <dl class="handled-context-grid">
                                 <div>
-                                    <dt>{{ __('Reset email target') }}</dt>
-                                    <dd>{{ $handled_customer_email }}</dd>
+                                    <dt>{{ __('Responses paused') }}</dt>
+                                    <dd>{{ $handled_responses_paused ? __('Yes') : __('No') }}</dd>
                                 </div>
+                                @if ($handled_customer_email)
+                                    <div>
+                                        <dt>{{ __('Reset email target') }}</dt>
+                                        <dd>{{ $handled_customer_email }}</dd>
+                                    </div>
+                                @endif
+                            </dl>
+                            @if ($handled_support_action_enabled)
+                                <p class="handled-context-empty">{{ __('Confirm each action to proxy it through Handled securely.') }}</p>
+                                <div class="handled-writeback-actions">
+                                    <button
+                                        type="button"
+                                        class="btn btn-default btn-sm handled-support-action"
+                                        data-action="handled_support_password_reset"
+                                        data-business-id="{{ $handled_business_id }}"
+                                        data-ticket-id="{{ $handled_ticket_id }}"
+                                        data-customer-email="{{ $handled_customer_email }}"
+                                        data-confirm="{{ __('Send the standard password reset email now?') }}"
+                                    >{{ __('Send password reset email') }}</button>
+                                    <button
+                                        type="button"
+                                        class="btn btn-default btn-sm handled-support-action"
+                                        data-action="handled_support_account_state"
+                                        data-business-id="{{ $handled_business_id }}"
+                                        data-ticket-id="{{ $handled_ticket_id }}"
+                                        data-customer-email="{{ $handled_customer_email }}"
+                                        data-responses-paused="{{ $handled_responses_paused ? 0 : 1 }}"
+                                        data-confirm="{{ $handled_responses_paused ? __('Resume automated responses for this business?') : __('Pause automated responses for this business?') }}"
+                                    >{{ $handled_responses_paused ? __('Resume responses') : __('Pause responses') }}</button>
+                                </div>
+                            @elseif (!empty($handled_business_id) && !empty($conversation->id))
+                                <p class="handled-context-empty">{{ __('Writeback button rendering is enabled, but action JS is still disabled for diagnostics.') }}</p>
+                            @else
+                                <p class="handled-context-empty">{{ __('Writeback controls are unavailable until Handled business context is loaded.') }}</p>
                             @endif
-                        </dl>
-                        @if ($handled_support_action_enabled)
-                            <p class="handled-context-empty">{{ __('Confirm each action to proxy it through Handled securely.') }}</p>
-                            <div class="handled-writeback-actions">
-                                <button
-                                    type="button"
-                                    class="btn btn-default btn-sm handled-support-action"
-                                    data-action="handled_support_password_reset"
-                                    data-business-id="{{ $handled_business_id }}"
-                                    data-ticket-id="{{ $handled_ticket_id }}"
-                                    data-customer-email="{{ $handled_customer_email }}"
-                                    data-confirm="{{ __('Send the standard password reset email now?') }}"
-                                >{{ __('Send password reset email') }}</button>
-                                <button
-                                    type="button"
-                                    class="btn btn-default btn-sm handled-support-action"
-                                    data-action="handled_support_account_state"
-                                    data-business-id="{{ $handled_business_id }}"
-                                    data-ticket-id="{{ $handled_ticket_id }}"
-                                    data-customer-email="{{ $handled_customer_email }}"
-                                    data-responses-paused="{{ $handled_responses_paused ? 0 : 1 }}"
-                                    data-confirm="{{ $handled_responses_paused ? __('Resume automated responses for this business?') : __('Pause automated responses for this business?') }}"
-                                >{{ $handled_responses_paused ? __('Resume responses') : __('Pause responses') }}</button>
-                            </div>
-                        @else
-                            <p class="handled-context-empty">{{ __('Writeback controls are unavailable until Handled business context is loaded.') }}</p>
-                        @endif
-                    </section>
+                        </section>
+                    @endif
 
                     @if ($handled_action_links)
                         <section class="handled-context-subcard">
@@ -520,7 +527,7 @@
                         </section>
                     @endif
 
-                    @if ($handled_support_writeback_visible)
+                    @if ($handled_support_activity_visible)
                         <section class="handled-context-subcard">
                             <div class="handled-eyebrow">{{ __('Backend activity') }}</div>
                             <h4>{{ __('Recent writeback activity') }}</h4>
@@ -628,7 +635,7 @@
         @endif
     </div>
 
-    @if ($handled_support_action_enabled)
+    @if ($handled_support_action_js_enabled)
         <script>
             jQuery(function($) {
                 $(document)
