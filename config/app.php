@@ -455,6 +455,7 @@ return [
     'handled_support_sync_enabled' => env('HANDLED_SUPPORT_SYNC_ENABLED', false),
     'handled_support_sync_url'     => env('HANDLED_SUPPORT_SYNC_URL', ''),
     'handled_support_sync_secret'  => env('HANDLED_SUPPORT_SYNC_SECRET', ''),
+    'handled_support_writeback_ui_enabled' => env('HANDLED_SUPPORT_WRITEBACK_UI_ENABLED', false),
 
     /*
     |--------------------------------------------------------------------------

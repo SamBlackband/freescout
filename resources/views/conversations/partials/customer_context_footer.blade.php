@@ -63,7 +63,8 @@
     $handled_ticket_id = $handled_ticket['ticket_id'] ?? ($handled_ticket['id'] ?? null);
     $handled_customer_email = !empty($conversation->customer_email) ? $conversation->customer_email : ($ordered_emails[0] ?? null);
     $handled_responses_paused = !empty($handled_business['responses_paused']);
-    $handled_support_action_enabled = !empty($handled_business_id) && !empty($conversation->id);
+    $handled_support_writeback_visible = (bool) config('app.handled_support_writeback_ui_enabled');
+    $handled_support_action_enabled = $handled_support_writeback_visible && !empty($handled_business_id) && !empty($conversation->id);
 @endphp
 
 @if ($handled_business || $handled_business_metrics || $handled_owner || $handled_account_health || $handled_diagnostics || $handled_history || $handled_actions || $handled_setup || $handled_support_summary || $handled_ticket || $handled_activity || $customer->company || $customer->job_title || $customer_location || $websites || $social_profiles || $customer->notes)
@@ -519,53 +520,55 @@
                         </section>
                     @endif
 
-                    <section class="handled-context-subcard">
-                        <div class="handled-eyebrow">{{ __('Backend activity') }}</div>
-                        <h4>{{ __('Recent writeback activity') }}</h4>
-                        @if ($handled_activity_items)
-                            <div class="handled-support-timeline">
-                                @foreach ($handled_activity_items as $handled_activity_item)
-                                    @php
-                                        $handled_activity_title = $handled_activity_item['title']
-                                            ?? $handled_activity_item['message']
-                                            ?? $handled_activity_item['event']
-                                            ?? $handled_activity_item['type']
-                                            ?? __('Activity');
-                                        $handled_activity_status = $handled_activity_item['status'] ?? null;
-                                        $handled_activity_time = $handled_activity_item['occurred_at']
-                                            ?? $handled_activity_item['created_at']
-                                            ?? $handled_activity_item['timestamp']
-                                            ?? null;
-                                        $handled_activity_detail = $handled_activity_item['description']
-                                            ?? $handled_activity_item['detail']
-                                            ?? $handled_activity_item['summary']
-                                            ?? null;
-                                        $handled_activity_actor = $handled_activity_item['actor']
-                                            ?? $handled_activity_item['initiated_by']
-                                            ?? null;
-                                    @endphp
-                                    <div class="handled-support-timeline-item">
-                                        <div class="handled-support-timeline-meta">
-                                            <strong>
-                                                {{ ucfirst(str_replace(['_', '-'], ' ', $handled_activity_title)) }}
-                                                @if ($handled_activity_status)
-                                                    · {{ ucfirst(str_replace(['_', '-'], ' ', $handled_activity_status)) }}
-                                                @endif
-                                            </strong>
-                                            <span>{{ $handled_activity_time ?: '—' }}</span>
+                    @if ($handled_support_writeback_visible)
+                        <section class="handled-context-subcard">
+                            <div class="handled-eyebrow">{{ __('Backend activity') }}</div>
+                            <h4>{{ __('Recent writeback activity') }}</h4>
+                            @if ($handled_activity_items)
+                                <div class="handled-support-timeline">
+                                    @foreach ($handled_activity_items as $handled_activity_item)
+                                        @php
+                                            $handled_activity_title = $handled_activity_item['title']
+                                                ?? $handled_activity_item['message']
+                                                ?? $handled_activity_item['event']
+                                                ?? $handled_activity_item['type']
+                                                ?? __('Activity');
+                                            $handled_activity_status = $handled_activity_item['status'] ?? null;
+                                            $handled_activity_time = $handled_activity_item['occurred_at']
+                                                ?? $handled_activity_item['created_at']
+                                                ?? $handled_activity_item['timestamp']
+                                                ?? null;
+                                            $handled_activity_detail = $handled_activity_item['description']
+                                                ?? $handled_activity_item['detail']
+                                                ?? $handled_activity_item['summary']
+                                                ?? null;
+                                            $handled_activity_actor = $handled_activity_item['actor']
+                                                ?? $handled_activity_item['initiated_by']
+                                                ?? null;
+                                        @endphp
+                                        <div class="handled-support-timeline-item">
+                                            <div class="handled-support-timeline-meta">
+                                                <strong>
+                                                    {{ ucfirst(str_replace(['_', '-'], ' ', $handled_activity_title)) }}
+                                                    @if ($handled_activity_status)
+                                                        · {{ ucfirst(str_replace(['_', '-'], ' ', $handled_activity_status)) }}
+                                                    @endif
+                                                </strong>
+                                                <span>{{ $handled_activity_time ?: '—' }}</span>
+                                            </div>
+                                            @if ($handled_activity_detail)
+                                                <p>{{ \Illuminate\Support\Str::limit($handled_activity_detail, 240) }}</p>
+                                            @elseif ($handled_activity_actor)
+                                                <p>{{ $handled_activity_actor }}</p>
+                                            @endif
                                         </div>
-                                        @if ($handled_activity_detail)
-                                            <p>{{ \Illuminate\Support\Str::limit($handled_activity_detail, 240) }}</p>
-                                        @elseif ($handled_activity_actor)
-                                            <p>{{ $handled_activity_actor }}</p>
-                                        @endif
-                                    </div>
-                                @endforeach
-                            </div>
-                        @else
-                            <p class="handled-context-empty">{{ __('No backend activity is available yet.') }}</p>
-                        @endif
-                    </section>
+                                    @endforeach
+                                </div>
+                            @else
+                                <p class="handled-context-empty">{{ __('No backend activity is available yet.') }}</p>
+                            @endif
+                        </section>
+                    @endif
 
                     <section class="handled-context-subcard">
                         <div class="handled-eyebrow">{{ __('Ticket activity') }}</div>
