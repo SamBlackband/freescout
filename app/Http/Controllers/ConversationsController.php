@@ -19,6 +19,7 @@ use App\Job;
 use App\Mailbox;
 use App\MailboxUser;
 use App\SendLog;
+use App\Services\HandledSupportContextService;
 use App\Thread;
 use App\User;
 use Illuminate\Http\Request;
@@ -684,6 +685,81 @@ class ConversationsController extends Controller
                     \Session::flash('flash_success_floating', $flash_message);
 
                     $response['msg'] = __('Status updated');
+                }
+                break;
+
+            case 'handled_support_password_reset':
+                $conversation = $this->getHandledSupportActionConversation($request);
+
+                if (!$conversation) {
+                    $response['msg'] = __('Conversation not found');
+                }
+                if (!$response['msg'] && !$user->can('update', $conversation)) {
+                    $response['msg'] = __('Not enough permissions');
+                }
+                if (!$response['msg'] && !trim((string) $request->business_id)) {
+                    $response['msg'] = __('Handled business not found');
+                }
+                if (!$response['msg']) {
+                    $result = app(HandledSupportContextService::class)->triggerPasswordReset(
+                        $this->buildHandledSupportActionPayload($request, $user),
+                        [
+                            'conversation_id' => $conversation->id,
+                            'business_id' => $request->business_id,
+                            'freescout_user_id' => $user->id,
+                        ]
+                    );
+
+                    if (!empty($result['ok'])) {
+                        $response['status'] = 'success';
+                        $response['msg'] = !empty($result['message']) ? $result['message'] : __('Password reset email triggered');
+                        $response['activity'] = $result['activity'] ?? null;
+                        $response['reload'] = true;
+                        \Session::flash('flash_success_floating', $response['msg']);
+                    } else {
+                        $response['msg'] = !empty($result['message']) ? $result['message'] : __('Unable to trigger password reset email');
+                    }
+                }
+                break;
+
+            case 'handled_support_account_state':
+                $conversation = $this->getHandledSupportActionConversation($request);
+                $responsesPaused = filter_var($request->responses_paused, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+
+                if (!$conversation) {
+                    $response['msg'] = __('Conversation not found');
+                }
+                if (!$response['msg'] && !$user->can('update', $conversation)) {
+                    $response['msg'] = __('Not enough permissions');
+                }
+                if (!$response['msg'] && !trim((string) $request->business_id)) {
+                    $response['msg'] = __('Handled business not found');
+                }
+                if (!$response['msg'] && $responsesPaused === null) {
+                    $response['msg'] = __('Incorrect state');
+                }
+                if (!$response['msg']) {
+                    $result = app(HandledSupportContextService::class)->updateAccountState(
+                        $this->buildHandledSupportActionPayload($request, $user, [
+                            'responses_paused' => $responsesPaused,
+                        ]),
+                        [
+                            'conversation_id' => $conversation->id,
+                            'business_id' => $request->business_id,
+                            'freescout_user_id' => $user->id,
+                        ]
+                    );
+
+                    if (!empty($result['ok'])) {
+                        $response['status'] = 'success';
+                        $response['msg'] = !empty($result['message']) ? $result['message'] : __('Account state updated');
+                        $response['activity'] = $result['activity'] ?? null;
+                        $response['state'] = $result['state'] ?? null;
+                        $response['reload'] = true;
+                        \Session::flash('flash_success_floating', $response['msg']);
+                    } else {
+                        $response['msg'] = !empty($result['message']) ? $result['message'] : __('Unable to update account state');
+                    }
                 }
                 break;
 
@@ -2828,6 +2904,48 @@ class ConversationsController extends Controller
         }
 
         return \Response::json($response);
+    }
+
+    protected function getHandledSupportActionConversation(Request $request)
+    {
+        if (!$request->conversation_id) {
+            return null;
+        }
+
+        return Conversation::find($request->conversation_id);
+    }
+
+    protected function buildHandledSupportActionPayload(Request $request, User $user, array $extra = [])
+    {
+        $payload = [
+            'business_id' => trim((string) $request->business_id),
+            'initiated_by' => $this->formatHandledSupportInitiator($user),
+        ];
+
+        foreach (['ticket_id', 'conversation_id', 'customer_email'] as $field) {
+            $value = trim((string) $request->input($field));
+
+            if ($value !== '') {
+                $payload[$field] = $value;
+            }
+        }
+
+        return array_merge($payload, $extra);
+    }
+
+    protected function formatHandledSupportInitiator(User $user)
+    {
+        $fullName = trim((string) $user->getFullName());
+
+        if ($fullName && $user->email) {
+            return $fullName.' <'.$user->email.'>';
+        }
+
+        if ($fullName) {
+            return $fullName;
+        }
+
+        return (string) $user->email;
     }
 
     /**
