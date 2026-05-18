@@ -248,6 +248,7 @@ return [
         'email_branding'     => ['default' => true],
         'open_tracking'      => ['default' => true],
         'subscription_defaults' => ['default' => []],
+        'handled_saved_replies' => ['default' => []],
     ],
 
     /*

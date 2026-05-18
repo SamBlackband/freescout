@@ -39,6 +39,118 @@ class AppServiceProvider extends ServiceProvider
             app(\App\Services\HandledSupportSyncEmitter::class)->emitConversationUpdated($conversation);
         }, 20, 1);
 
+        \Eventy::addFilter('settings.sections', function ($sections) {
+            $sections['saved_replies'] = ['title' => __('Saved Replies'), 'icon' => 'comment', 'order' => 350];
+
+            return $sections;
+        }, 20, 1);
+
+        \Eventy::addFilter('settings.section_settings', function ($settings, $section) {
+            if ($section !== 'saved_replies') {
+                return $settings;
+            }
+
+            return [
+                'handled_saved_replies' => \App\Option::get('handled_saved_replies', []),
+            ];
+        }, 20, 2);
+
+        \Eventy::addFilter('settings.section_params', function ($params, $section) {
+            if ($section !== 'saved_replies') {
+                return $params;
+            }
+
+            return [
+                'validator_rules' => [
+                    'settings.handled_saved_replies' => 'array',
+                    'settings.handled_saved_replies.*.name' => 'nullable|string|max:80',
+                    'settings.handled_saved_replies.*.body' => 'nullable|string|max:20000',
+                ],
+                'settings' => [
+                    'handled_saved_replies' => [
+                        'default' => [],
+                    ],
+                ],
+            ];
+        }, 20, 2);
+
+        \Eventy::addFilter('settings.view', function ($view, $section) {
+            if ($section === 'saved_replies') {
+                return 'settings.saved_replies';
+            }
+
+            return $view;
+        }, 20, 2);
+
+        \Eventy::addFilter('settings.before_save', function ($request, $section) {
+            if ($section !== 'saved_replies') {
+                return $request;
+            }
+
+            $savedReplies = $request->input('settings.handled_saved_replies', []);
+            if (!is_array($savedReplies)) {
+                $savedReplies = [];
+            }
+
+            $sanitizedReplies = [];
+            foreach ($savedReplies as $savedReply) {
+                $name = trim((string)($savedReply['name'] ?? ''));
+                $body = trim((string)($savedReply['body'] ?? ''));
+
+                if ($name === '' && $body === '') {
+                    continue;
+                }
+
+                if ($name === '' || $body === '') {
+                    continue;
+                }
+
+                $sanitizedReplies[] = [
+                    'name' => mb_substr($name, 0, 80),
+                    'body' => \Helper::stripDangerousTags($body),
+                ];
+            }
+
+            $settings = $request->input('settings', []);
+            $settings['handled_saved_replies'] = $sanitizedReplies;
+            $request->merge(['settings' => $settings]);
+
+            return $request;
+        }, 20, 2);
+
+        \Eventy::addAction('conv_editor.editor_toolbar_prepend', function ($mailbox, $conversation) {
+            $savedReplies = \App\Option::get('handled_saved_replies', []);
+            if (!is_array($savedReplies) || empty($savedReplies)) {
+                return;
+            }
+
+            $savedReplies = array_values(array_filter(array_map(function ($savedReply) use ($conversation) {
+                $name = trim((string)($savedReply['name'] ?? ''));
+                $body = trim((string)($savedReply['body'] ?? ''));
+
+                if ($name === '' || $body === '') {
+                    return null;
+                }
+
+                if ($conversation) {
+                    $body = $conversation->replaceTextVars($body);
+                }
+
+                return [
+                    'name' => $name,
+                    'body' => \Helper::stripDangerousTags($body),
+                ];
+            }, $savedReplies)));
+
+            if (empty($savedReplies)) {
+                return;
+            }
+
+            echo view('conversations.partials.saved_replies_toolbar', [
+                'handled_saved_replies' => $savedReplies,
+            ])->render();
+        }, 20, 2);
+
         \Validator::extend('safehost', function ($attribute, $value, $parameters, $validator) {
             if (!$value) {
                 return true;

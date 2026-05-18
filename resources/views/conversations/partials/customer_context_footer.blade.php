@@ -2,6 +2,10 @@
     $handled_support_context = $handled_support_context ?? (isset($conversation) ? app(\App\Services\HandledSupportContextService::class)->lookupForConversation($conversation) : null);
     $handled_business = $handled_business ?? (is_array($handled_support_context) ? ($handled_support_context['business'] ?? null) : null);
     $handled_business_metrics = is_array($handled_support_context) ? ($handled_support_context['business_metrics'] ?? null) : null;
+    $handled_owner = is_array($handled_support_context) ? ($handled_support_context['owner'] ?? null) : null;
+    $handled_account_health = is_array($handled_support_context) ? ($handled_support_context['account_health'] ?? null) : null;
+    $handled_diagnostics = is_array($handled_support_context) ? ($handled_support_context['diagnostics'] ?? null) : null;
+    $handled_history = is_array($handled_support_context) ? ($handled_support_context['history'] ?? null) : null;
     $handled_setup = $handled_setup ?? (is_array($handled_support_context) ? ($handled_support_context['setup'] ?? null) : null);
     $handled_support_summary = $handled_support_summary ?? (is_array($handled_support_context) ? ($handled_support_context['support_summary'] ?? null) : null);
     $handled_ticket = $handled_ticket ?? (is_array($handled_support_context) ? ($handled_support_context['ticket'] ?? null) : null);
@@ -26,9 +30,36 @@
     }
     $handled_currency = $handled_business['currency'] ?? '£';
     $handled_bookings_value = number_format(((int) ($handled_business_metrics['bookings_value_pence'] ?? 0)) / 100, 2);
+    $handled_action_links = array_filter([
+        [
+            'url' => $handled_actions['admin_shell_url'] ?? null,
+            'label' => __('Open admin shell'),
+        ],
+        [
+            'url' => $handled_actions['admin_diagnostics_url'] ?? null,
+            'label' => __('Open diagnostics JSON'),
+        ],
+        [
+            'url' => $handled_actions['mailto_business'] ?? null,
+            'label' => __('Email account owner'),
+        ],
+        [
+            'url' => $handled_actions['booking_url'] ?? null,
+            'label' => __('Open booking page'),
+        ],
+        [
+            'url' => $handled_actions['instagram_url'] ?? null,
+            'label' => __('Open Instagram'),
+        ],
+    ], function ($action) {
+        return !empty($action['url']);
+    });
+    $handled_recent_email_events = is_array($handled_history['recent_email_events'] ?? null) ? $handled_history['recent_email_events'] : [];
+    $handled_recent_retries = is_array($handled_history['recent_outbound_retries'] ?? null) ? $handled_history['recent_outbound_retries'] : [];
+    $handled_channel_breakdown = is_array($handled_diagnostics['channel_breakdown'] ?? null) ? $handled_diagnostics['channel_breakdown'] : [];
 @endphp
 
-@if ($handled_business || $handled_business_metrics || $handled_actions || $handled_setup || $handled_support_summary || $handled_ticket || $customer->company || $customer->job_title || $customer_location || $websites || $social_profiles || $customer->notes)
+@if ($handled_business || $handled_business_metrics || $handled_owner || $handled_account_health || $handled_diagnostics || $handled_history || $handled_actions || $handled_setup || $handled_support_summary || $handled_ticket || $customer->company || $customer->job_title || $customer_location || $websites || $social_profiles || $customer->notes)
     <div class="handled-conversation-footer">
         <div class="handled-conversation-footer-grid">
             <section class="handled-conversation-footer-card handled-context-card handled-context-panel">
@@ -80,17 +111,6 @@
                                 <span class="handled-context-metric-label">{{ __('Booking value') }}</span>
                                 <span class="handled-context-metric-value">{{ $handled_currency }}{{ $handled_bookings_value }}</span>
                             </div>
-                        @endif
-                    </div>
-                @endif
-
-                @if ($handled_actions && (!empty($handled_actions['booking_url']) || !empty($handled_actions['instagram_url'])))
-                    <div class="handled-customer-links">
-                        @if (!empty($handled_actions['booking_url']))
-                            <a href="{{ $handled_actions['booking_url'] }}" target="_blank">{{ __('Open booking page') }}</a>
-                        @endif
-                        @if (!empty($handled_actions['instagram_url']))
-                            <a href="{{ $handled_actions['instagram_url'] }}" target="_blank">{{ __('Open Instagram') }}</a>
                         @endif
                     </div>
                 @endif
@@ -200,6 +220,90 @@
                         </section>
                     @endif
 
+                    @if ($handled_owner && (!empty($handled_owner['user_emails']) || array_key_exists('verified_user_count', $handled_owner) || !empty($handled_owner['last_login_at']) || array_key_exists('days_since_last_login', $handled_owner)))
+                        <section class="handled-context-subcard">
+                            <div class="handled-eyebrow">{{ __('Owner coverage') }}</div>
+                            <h4>{{ __('Owner + operator signals') }}</h4>
+                            <dl class="handled-context-grid">
+                                @if (!empty($handled_owner['user_emails']) && is_array($handled_owner['user_emails']))
+                                    <div>
+                                        <dt>{{ __('Owner emails') }}</dt>
+                                        <dd>{{ implode(', ', $handled_owner['user_emails']) }}</dd>
+                                    </div>
+                                @endif
+                                <div>
+                                    <dt>{{ __('Verified users') }}</dt>
+                                    <dd>{{ $handled_owner['verified_user_count'] ?? 0 }} / {{ $handled_owner['user_count'] ?? 0 }}</dd>
+                                </div>
+                                @if (!empty($handled_owner['last_login_at']))
+                                    <div>
+                                        <dt>{{ __('Last login') }}</dt>
+                                        <dd>{{ $handled_owner['last_login_at'] }}</dd>
+                                    </div>
+                                @endif
+                                @if (array_key_exists('days_since_last_login', $handled_owner) && $handled_owner['days_since_last_login'] !== null)
+                                    <div>
+                                        <dt>{{ __('Days since login') }}</dt>
+                                        <dd>{{ $handled_owner['days_since_last_login'] }}</dd>
+                                    </div>
+                                @endif
+                                @if (array_key_exists('is_operator', $handled_business))
+                                    <div>
+                                        <dt>{{ __('Operator entity') }}</dt>
+                                        <dd>{{ !empty($handled_business['is_operator']) ? __('Yes') : __('No') }}</dd>
+                                    </div>
+                                @endif
+                            </dl>
+                        </section>
+                    @endif
+
+                    @if ($handled_account_health && (!empty($handled_account_health['holiday_return_date']) || array_key_exists('holiday_mode_active', $handled_account_health) || array_key_exists('onboarding_seen', $handled_account_health) || !empty($handled_account_health['setup_started_at']) || !empty($handled_account_health['setup_last_activity_at']) || !empty($handled_account_health['setup_completed_at']) || !empty($handled_account_health['low_confidence_behaviour'])))
+                        <section class="handled-context-subcard">
+                            <div class="handled-eyebrow">{{ __('Account health') }}</div>
+                            <h4>{{ __('Read-only operating state') }}</h4>
+                            <dl class="handled-context-grid">
+                                <div>
+                                    <dt>{{ __('Holiday mode') }}</dt>
+                                    <dd>{{ !empty($handled_account_health['holiday_mode_active']) ? __('Active') : __('Off') }}</dd>
+                                </div>
+                                @if (!empty($handled_account_health['holiday_return_date']))
+                                    <div>
+                                        <dt>{{ __('Holiday return') }}</dt>
+                                        <dd>{{ $handled_account_health['holiday_return_date'] }}</dd>
+                                    </div>
+                                @endif
+                                <div>
+                                    <dt>{{ __('Onboarding seen') }}</dt>
+                                    <dd>{{ !empty($handled_account_health['onboarding_seen']) ? __('Yes') : __('No') }}</dd>
+                                </div>
+                                @if (!empty($handled_account_health['low_confidence_behaviour']))
+                                    <div>
+                                        <dt>{{ __('Low-confidence mode') }}</dt>
+                                        <dd>{{ str_replace('_', ' ', $handled_account_health['low_confidence_behaviour']) }}</dd>
+                                    </div>
+                                @endif
+                                @if (!empty($handled_account_health['setup_started_at']))
+                                    <div>
+                                        <dt>{{ __('Setup started') }}</dt>
+                                        <dd>{{ $handled_account_health['setup_started_at'] }}</dd>
+                                    </div>
+                                @endif
+                                @if (!empty($handled_account_health['setup_last_activity_at']))
+                                    <div>
+                                        <dt>{{ __('Setup last active') }}</dt>
+                                        <dd>{{ $handled_account_health['setup_last_activity_at'] }}</dd>
+                                    </div>
+                                @endif
+                                @if (!empty($handled_account_health['setup_completed_at']))
+                                    <div>
+                                        <dt>{{ __('Setup completed') }}</dt>
+                                        <dd>{{ $handled_account_health['setup_completed_at'] }}</dd>
+                                    </div>
+                                @endif
+                            </dl>
+                        </section>
+                    @endif
+
                     @if ($handled_setup || $handled_support_summary || $handled_business_metrics || $handled_matched_by)
                         <section class="handled-context-subcard">
                             <div class="handled-eyebrow">{{ __('Visibility') }}</div>
@@ -258,49 +362,157 @@
             <section class="handled-conversation-footer-card handled-context-card handled-context-panel">
                 <div class="handled-context-card-header">
                     <div>
-                        <div class="handled-eyebrow">{{ __('Ticket activity') }}</div>
-                        <h4>{{ __('Recent synced support activity') }}</h4>
+                        <div class="handled-eyebrow">{{ __('Support diagnostics') }}</div>
+                        <h4>{{ __('History + safe actions') }}</h4>
                     </div>
                 </div>
-                @if ($handled_ticket)
-                    <dl class="handled-context-grid">
-                        @if (!empty($handled_ticket['message_count']))
-                            <div>
-                                <dt>{{ __('Messages synced') }}</dt>
-                                <dd>{{ $handled_ticket['message_count'] }}</dd>
-                            </div>
-                        @endif
-                        @if (!empty($handled_ticket['last_message_at']))
-                            <div>
-                                <dt>{{ __('Last message') }}</dt>
-                                <dd>{{ $handled_ticket['last_message_at'] }}</dd>
-                            </div>
-                        @endif
-                        @if (!empty($handled_ticket['portal_reply_enabled']))
-                            <div>
-                                <dt>{{ __('Portal reply') }}</dt>
-                                <dd>{{ __('Enabled') }}</dd>
-                            </div>
-                        @endif
-                    </dl>
-                @endif
-                @if ($handled_ticket && !empty($handled_ticket['messages']) && is_array($handled_ticket['messages']))
-                    <div class="handled-support-timeline">
-                        @foreach ($handled_ticket['messages'] as $handled_message)
-                            <div class="handled-support-timeline-item">
-                                <div class="handled-support-timeline-meta">
-                                    <strong>{{ ($handled_message['direction'] ?? '') === 'outbound' ? __('Support reply') : __('Customer message') }}</strong>
-                                    <span>{{ $handled_message['created_at'] ?? '' }}</span>
-                                </div>
-                                <p>{{ $handled_message['preview'] ?? $handled_message['body_text'] ?? '' }}</p>
-                            </div>
-                        @endforeach
+                @if ($handled_diagnostics)
+                    <div class="handled-context-metrics">
+                        <div class="handled-context-metric">
+                            <span class="handled-context-metric-label">{{ __('Open alerts') }}</span>
+                            <span class="handled-context-metric-value">{{ $handled_diagnostics['unresolved_alerts_total'] ?? 0 }}</span>
+                        </div>
+                        <div class="handled-context-metric">
+                            <span class="handled-context-metric-label">{{ __('Customer msgs (7d)') }}</span>
+                            <span class="handled-context-metric-value">{{ $handled_diagnostics['customer_messages_7d'] ?? 0 }}</span>
+                        </div>
+                        <div class="handled-context-metric">
+                            <span class="handled-context-metric-label">{{ __('Pending retries') }}</span>
+                            <span class="handled-context-metric-value">{{ $handled_diagnostics['pending_retries_total'] ?? 0 }}</span>
+                        </div>
+                        <div class="handled-context-metric">
+                            <span class="handled-context-metric-label">{{ __('Failed emails (14d)') }}</span>
+                            <span class="handled-context-metric-value">{{ $handled_diagnostics['failed_email_events_14d'] ?? 0 }}</span>
+                        </div>
                     </div>
-                @elseif ($handled_ticket)
-                    <p class="handled-context-empty">{{ __('No linked message activity is available yet.') }}</p>
-                @else
-                    <p class="handled-context-empty">{{ __('No linked Handled ticket is available yet.') }}</p>
                 @endif
+
+                <div class="handled-context-detail-grid">
+                    @if ($handled_action_links)
+                        <section class="handled-context-subcard">
+                            <div class="handled-eyebrow">{{ __('Safe actions') }}</div>
+                            <h4>{{ __('Support-owned links') }}</h4>
+                            <div class="handled-customer-links">
+                                @foreach ($handled_action_links as $handled_action)
+                                    <a href="{{ $handled_action['url'] }}" target="_blank">{{ $handled_action['label'] }}</a>
+                                @endforeach
+                            </div>
+                        </section>
+                    @endif
+
+                    @if ($handled_diagnostics)
+                        <section class="handled-context-subcard">
+                            <div class="handled-eyebrow">{{ __('Diagnostics') }}</div>
+                            <h4>{{ __('Filtered platform signals') }}</h4>
+                            <dl class="handled-context-grid">
+                                <div>
+                                    <dt>{{ __('Recent alerts (7d)') }}</dt>
+                                    <dd>{{ $handled_diagnostics['recent_alerts_total'] ?? 0 }}</dd>
+                                </div>
+                                <div>
+                                    <dt>{{ __('Assistant msgs (7d)') }}</dt>
+                                    <dd>{{ $handled_diagnostics['assistant_messages_7d'] ?? 0 }}</dd>
+                                </div>
+                                <div>
+                                    <dt>{{ __('Support msgs (14d)') }}</dt>
+                                    <dd>{{ $handled_diagnostics['support_messages_14d'] ?? 0 }}</dd>
+                                </div>
+                                <div>
+                                    <dt>{{ __('Failed retries') }}</dt>
+                                    <dd>{{ $handled_diagnostics['failed_retries_total'] ?? 0 }}</dd>
+                                </div>
+                            </dl>
+                            @if ($handled_channel_breakdown)
+                                <div class="handled-support-timeline">
+                                    @foreach ($handled_channel_breakdown as $channel)
+                                        <div class="handled-support-timeline-item">
+                                            <div class="handled-support-timeline-meta">
+                                                <strong>{{ ucfirst($channel['channel'] ?? __('Unknown')) }}</strong>
+                                                <span>{{ $channel['count'] ?? 0 }} {{ __('conversations') }}</span>
+                                            </div>
+                                        </div>
+                                    @endforeach
+                                </div>
+                            @endif
+                        </section>
+                    @endif
+
+                    @if ($handled_recent_retries || $handled_recent_email_events)
+                        <section class="handled-context-subcard">
+                            <div class="handled-eyebrow">{{ __('Delivery history') }}</div>
+                            <h4>{{ __('Recent retries + email events') }}</h4>
+                            <div class="handled-support-timeline">
+                                @foreach ($handled_recent_retries as $retry)
+                                    <div class="handled-support-timeline-item">
+                                        <div class="handled-support-timeline-meta">
+                                            <strong>{{ strtoupper($retry['channel'] ?? __('Retry')) }} · {{ ucfirst($retry['status'] ?? __('Unknown')) }}</strong>
+                                            <span>{{ $retry['last_attempted_at'] ?? $retry['created_at'] ?? '' }}</span>
+                                        </div>
+                                        <p>
+                                            {{ __('Attempt :attempt of :max', ['attempt' => $retry['attempt_count'] ?? 0, 'max' => $retry['max_attempts'] ?? 0]) }}
+                                            @if (!empty($retry['error_last']))
+                                                — {{ $retry['error_last'] }}
+                                            @endif
+                                        </p>
+                                    </div>
+                                @endforeach
+                                @foreach ($handled_recent_email_events as $event)
+                                    <div class="handled-support-timeline-item">
+                                        <div class="handled-support-timeline-meta">
+                                            <strong>{{ ucfirst($event['event_type'] ?? __('Email')) }} · {{ ucfirst($event['status'] ?? __('Unknown')) }}</strong>
+                                            <span>{{ $event['sent_at'] ?? '' }}</span>
+                                        </div>
+                                        <p>{{ $event['email'] ?? '—' }}</p>
+                                    </div>
+                                @endforeach
+                            </div>
+                        </section>
+                    @endif
+
+                    <section class="handled-context-subcard">
+                        <div class="handled-eyebrow">{{ __('Ticket activity') }}</div>
+                        <h4>{{ __('Recent synced support activity') }}</h4>
+                        @if ($handled_ticket)
+                            <dl class="handled-context-grid">
+                                @if (!empty($handled_ticket['message_count']))
+                                    <div>
+                                        <dt>{{ __('Messages synced') }}</dt>
+                                        <dd>{{ $handled_ticket['message_count'] }}</dd>
+                                    </div>
+                                @endif
+                                @if (!empty($handled_ticket['last_message_at']))
+                                    <div>
+                                        <dt>{{ __('Last message') }}</dt>
+                                        <dd>{{ $handled_ticket['last_message_at'] }}</dd>
+                                    </div>
+                                @endif
+                                @if (!empty($handled_ticket['portal_reply_enabled']))
+                                    <div>
+                                        <dt>{{ __('Portal reply') }}</dt>
+                                        <dd>{{ __('Enabled') }}</dd>
+                                    </div>
+                                @endif
+                            </dl>
+                        @endif
+                        @if ($handled_ticket && !empty($handled_ticket['messages']) && is_array($handled_ticket['messages']))
+                            <div class="handled-support-timeline">
+                                @foreach ($handled_ticket['messages'] as $handled_message)
+                                    <div class="handled-support-timeline-item">
+                                        <div class="handled-support-timeline-meta">
+                                            <strong>{{ ($handled_message['direction'] ?? '') === 'outbound' ? __('Support reply') : __('Customer message') }}</strong>
+                                            <span>{{ $handled_message['created_at'] ?? '' }}</span>
+                                        </div>
+                                        <p>{{ $handled_message['preview'] ?? $handled_message['body_text'] ?? '' }}</p>
+                                    </div>
+                                @endforeach
+                            </div>
+                        @elseif ($handled_ticket)
+                            <p class="handled-context-empty">{{ __('No linked message activity is available yet.') }}</p>
+                        @else
+                            <p class="handled-context-empty">{{ __('No linked Handled ticket is available yet.') }}</p>
+                        @endif
+                    </section>
+                </div>
             </section>
         </div>
 
