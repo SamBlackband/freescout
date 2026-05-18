@@ -1,9 +1,12 @@
 @php
     $handled_support_context = $handled_support_context ?? (isset($conversation) ? app(\App\Services\HandledSupportContextService::class)->lookupForConversation($conversation) : null);
     $handled_business = $handled_business ?? (is_array($handled_support_context) ? ($handled_support_context['business'] ?? null) : null);
+    $handled_business_metrics = is_array($handled_support_context) ? ($handled_support_context['business_metrics'] ?? null) : null;
     $handled_setup = $handled_setup ?? (is_array($handled_support_context) ? ($handled_support_context['setup'] ?? null) : null);
     $handled_support_summary = $handled_support_summary ?? (is_array($handled_support_context) ? ($handled_support_context['support_summary'] ?? null) : null);
     $handled_ticket = $handled_ticket ?? (is_array($handled_support_context) ? ($handled_support_context['ticket'] ?? null) : null);
+    $handled_actions = is_array($handled_support_context) ? ($handled_support_context['actions'] ?? null) : null;
+    $handled_matched_by = is_array($handled_support_context) ? ($handled_support_context['matched_by'] ?? null) : null;
     $customer_location = array_filter([$customer->city, $customer->state, $customer->getCountryName()]);
     $websites = $customer->getWebsites();
     $social_profiles = $customer->getSocialProfiles();
@@ -21,9 +24,11 @@
             $ordered_emails[] = $email->email;
         }
     }
+    $handled_currency = $handled_business['currency'] ?? '£';
+    $handled_bookings_value = number_format(((int) ($handled_business_metrics['bookings_value_pence'] ?? 0)) / 100, 2);
 @endphp
 
-@if ($handled_setup || $handled_support_summary || $handled_ticket || $customer->company || $customer->job_title || $customer_location || $websites || $social_profiles || $customer->notes)
+@if ($handled_business || $handled_business_metrics || $handled_actions || $handled_setup || $handled_support_summary || $handled_ticket || $customer->company || $customer->job_title || $customer_location || $websites || $social_profiles || $customer->notes)
     <div class="handled-conversation-footer">
         <div class="handled-conversation-footer-grid">
             <section class="handled-conversation-footer-card handled-context-card handled-context-panel">
@@ -34,7 +39,7 @@
                     </div>
                 </div>
 
-                @if ($handled_business || $handled_support_summary || $handled_setup)
+                @if ($handled_business || $handled_support_summary || $handled_setup || $handled_business_metrics)
                     <div class="handled-context-metrics">
                         @if ($handled_business)
                             <div class="handled-context-metric">
@@ -57,6 +62,38 @@
                                 <span class="handled-context-metric-label">{{ __('Setup progress') }}</span>
                                 <span class="handled-context-metric-value">{{ $handled_setup['completion_percentage'] ?? 0 }}%</span>
                             </div>
+                        @endif
+                        @if ($handled_business_metrics)
+                            <div class="handled-context-metric">
+                                <span class="handled-context-metric-label">{{ __('Conversations') }}</span>
+                                <span class="handled-context-metric-value">{{ $handled_business_metrics['conversation_total'] ?? 0 }}</span>
+                            </div>
+                            <div class="handled-context-metric">
+                                <span class="handled-context-metric-label">{{ __('Bookings') }}</span>
+                                <span class="handled-context-metric-value">{{ $handled_business_metrics['bookings_total'] ?? 0 }}</span>
+                            </div>
+                            <div class="handled-context-metric">
+                                <span class="handled-context-metric-label">{{ __('Upcoming bookings') }}</span>
+                                <span class="handled-context-metric-value">{{ $handled_business_metrics['upcoming_bookings_total'] ?? 0 }}</span>
+                            </div>
+                            <div class="handled-context-metric">
+                                <span class="handled-context-metric-label">{{ __('Booking value') }}</span>
+                                <span class="handled-context-metric-value">{{ $handled_currency }}{{ $handled_bookings_value }}</span>
+                            </div>
+                        @endif
+                    </div>
+                @endif
+
+                @if ($handled_actions && (!empty($handled_actions['booking_url']) || !empty($handled_actions['instagram_url']) || !empty($handled_actions['mailto_business'])))
+                    <div class="handled-customer-links">
+                        @if (!empty($handled_actions['booking_url']))
+                            <a href="{{ $handled_actions['booking_url'] }}" target="_blank">{{ __('Open booking page') }}</a>
+                        @endif
+                        @if (!empty($handled_actions['instagram_url']))
+                            <a href="{{ $handled_actions['instagram_url'] }}" target="_blank">{{ __('Open Instagram') }}</a>
+                        @endif
+                        @if (!empty($handled_actions['mailto_business']))
+                            <a href="{{ $handled_actions['mailto_business'] }}">{{ __('Email business') }}</a>
                         @endif
                     </div>
                 @endif
@@ -158,42 +195,95 @@
                         @endif
 
                         <div class="handled-context-section">
-                    <div class="handled-eyebrow">{{ __('Visibility') }}</div>
-                    <h4>{{ __('Support + setup state') }}</h4>
-                    @if ($handled_setup || $handled_support_summary)
-                        <dl class="handled-context-grid">
-                            @if ($handled_support_summary)
-                                <div>
-                                    <dt>{{ __('Active tickets') }}</dt>
-                                    <dd>{{ $handled_support_summary['active_tickets_total'] ?? 0 }}</dd>
-                                </div>
-                                <div>
-                                    <dt>{{ __('Ticket history') }}</dt>
-                                    <dd>{{ $handled_support_summary['tickets_total'] ?? 0 }}</dd>
-                                </div>
+                            <div class="handled-eyebrow">{{ __('Visibility') }}</div>
+                            <h4>{{ __('Support + setup state') }}</h4>
+                            @if ($handled_setup || $handled_support_summary || $handled_business_metrics || $handled_business)
+                                <dl class="handled-context-grid">
+                                    @if ($handled_support_summary)
+                                        <div>
+                                            <dt>{{ __('Active tickets') }}</dt>
+                                            <dd>{{ $handled_support_summary['active_tickets_total'] ?? 0 }}</dd>
+                                        </div>
+                                        <div>
+                                            <dt>{{ __('Ticket history') }}</dt>
+                                            <dd>{{ $handled_support_summary['tickets_total'] ?? 0 }}</dd>
+                                        </div>
+                                        @if (!empty($handled_support_summary['latest_activity_at']))
+                                            <div>
+                                                <dt>{{ __('Latest support activity') }}</dt>
+                                                <dd>{{ $handled_support_summary['latest_activity_at'] }}</dd>
+                                            </div>
+                                        @endif
+                                    @endif
+                                    @if ($handled_setup)
+                                        <div>
+                                            <dt>{{ __('Next gap') }}</dt>
+                                            <dd>{{ $handled_setup['first_incomplete'] ?? __('Complete') }}</dd>
+                                        </div>
+                                    @endif
+                                    @if ($handled_business)
+                                        <div>
+                                            <dt>{{ __('Subscription') }}</dt>
+                                            <dd>{{ $handled_business['subscription_status'] ?? '—' }}</dd>
+                                        </div>
+                                        <div>
+                                            <dt>{{ __('Responses paused') }}</dt>
+                                            <dd>{{ !empty($handled_business['responses_paused']) ? __('Yes') : __('No') }}</dd>
+                                        </div>
+                                    @endif
+                                    @if ($handled_business_metrics)
+                                        <div>
+                                            <dt>{{ __('Customer records') }}</dt>
+                                            <dd>{{ $handled_business_metrics['customer_profiles_total'] ?? 0 }}</dd>
+                                        </div>
+                                        @if (!empty($handled_business_metrics['latest_booking_at']))
+                                            <div>
+                                                <dt>{{ __('Latest booking') }}</dt>
+                                                <dd>{{ $handled_business_metrics['latest_booking_at'] }}</dd>
+                                            </div>
+                                        @endif
+                                    @endif
+                                </dl>
+                            @else
+                                <p class="handled-context-empty">{{ __('No setup or support visibility data is available yet.') }}</p>
                             @endif
-                            @if ($handled_setup)
-                                <div>
-                                    <dt>{{ __('Setup progress') }}</dt>
-                                    <dd>{{ $handled_setup['completion_percentage'] ?? 0 }}%</dd>
-                                </div>
-                                <div>
-                                    <dt>{{ __('Next gap') }}</dt>
-                                    <dd>{{ $handled_setup['first_incomplete'] ?? __('Complete') }}</dd>
-                                </div>
-                            @endif
-                        </dl>
-                    @else
-                        <p class="handled-context-empty">{{ __('No setup or support visibility data is available yet.') }}</p>
-                    @endif
                         </div>
                     </div>
                 </div>
             </section>
 
             <section class="handled-conversation-footer-card handled-context-card handled-context-panel">
-                <div class="handled-eyebrow">{{ __('Linked ticket') }}</div>
-                <h4>@if ($handled_ticket)#{{ $handled_ticket['id'] ?? '—' }} {{ $handled_ticket['subject'] ?? __('Support request') }}@else{{ __('Support request activity') }}@endif</h4>
+                <div class="handled-context-card-header">
+                    <div>
+                        <div class="handled-eyebrow">{{ __('Linked ticket') }}</div>
+                        <h4>@if ($handled_ticket)#{{ $handled_ticket['id'] ?? '—' }} {{ $handled_ticket['subject'] ?? __('Support request') }}@else{{ __('Support request activity') }}@endif</h4>
+                    </div>
+                    @if ($handled_matched_by)
+                        <span class="fs-tag"><span class="fs-tag-name">{{ __('Matched via :source', ['source' => $handled_matched_by]) }}</span></span>
+                    @endif
+                </div>
+                @if ($handled_ticket)
+                    <dl class="handled-context-grid">
+                        @if (!empty($handled_ticket['message_count']))
+                            <div>
+                                <dt>{{ __('Messages synced') }}</dt>
+                                <dd>{{ $handled_ticket['message_count'] }}</dd>
+                            </div>
+                        @endif
+                        @if (!empty($handled_ticket['last_message_at']))
+                            <div>
+                                <dt>{{ __('Last message') }}</dt>
+                                <dd>{{ $handled_ticket['last_message_at'] }}</dd>
+                            </div>
+                        @endif
+                        @if (!empty($handled_ticket['portal_reply_enabled']))
+                            <div>
+                                <dt>{{ __('Portal reply') }}</dt>
+                                <dd>{{ __('Enabled') }}</dd>
+                            </div>
+                        @endif
+                    </dl>
+                @endif
                 @if ($handled_ticket && !empty($handled_ticket['messages']) && is_array($handled_ticket['messages']))
                     <div class="handled-support-timeline">
                         @foreach ($handled_ticket['messages'] as $handled_message)

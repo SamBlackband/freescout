@@ -19,12 +19,12 @@
             align-items: flex-start;
             justify-content: space-between;
             gap: 16px;
-            margin-bottom: 14px;
+            margin-bottom: 10px;
         }
 
         .handled-context-section {
-            margin-top: 18px;
-            padding-top: 18px;
+            margin-top: 14px;
+            padding-top: 14px;
             border-top: 1px solid rgba(216, 223, 230, 0.9);
         }
 
@@ -40,9 +40,9 @@
 
         .handled-customer-summary .handled-customer-avatar img {
             display: block;
-            width: 64px;
-            height: 64px;
-            border: 3px solid #e6eef7;
+            width: 56px;
+            height: 56px;
+            border: 2px solid #e6eef7;
             border-radius: 50%;
             object-fit: cover;
         }
@@ -56,7 +56,7 @@
             display: block;
             margin: 0 0 8px;
             color: #0f1923;
-            font-size: 20px;
+            font-size: 18px;
             font-weight: 700;
             line-height: 1.2;
         }
@@ -86,7 +86,7 @@
 
         .handled-customer-summary .handled-customer-contact {
             color: #0f1923;
-            font-size: 13px;
+            font-size: 12px;
             line-height: 1.45;
         }
 
@@ -121,7 +121,7 @@
         .handled-context-grid {
             display: grid;
             grid-template-columns: minmax(0, 1fr);
-            gap: 12px;
+            gap: 10px;
             margin: 0;
         }
 
@@ -141,7 +141,7 @@
         .handled-context-grid dd {
             margin: 0;
             color: #0f1923;
-            font-size: 14px;
+            font-size: 13px;
             font-weight: 600;
             line-height: 1.4;
         }
