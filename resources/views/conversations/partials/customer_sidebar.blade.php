@@ -26,6 +26,15 @@
             margin-bottom: 10px;
         }
 
+        .handled-context-card-header h3 {
+            margin: 0;
+            color: #2f7d32;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: .08em;
+            text-transform: uppercase;
+        }
+
         .handled-context-section {
             margin-top: 14px;
             padding-top: 14px;
