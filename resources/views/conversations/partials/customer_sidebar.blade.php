@@ -28,7 +28,7 @@
 
         .handled-context-card-header h3 {
             margin: 0;
-            color: #2f7d32;
+            color: #d8dfe6e6;
             font-size: 11px;
             font-weight: 700;
             letter-spacing: .08em;
