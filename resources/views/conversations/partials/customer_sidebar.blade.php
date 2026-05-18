@@ -10,7 +10,7 @@
     <style {!! \Helper::cspNonceAttr() !!}>
         .handled-context-panel {
             display: flow-root;
-            padding-bottom: 24px;
+            padding-bottom: 0px;
             overflow: visible;
         }
 
