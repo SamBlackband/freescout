@@ -98,9 +98,24 @@
 
         body.body-conv .handled-context-detail-grid {
             display: grid;
-            gap: 20px;
-            grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+            gap: 16px;
+            grid-template-columns: minmax(0, 1fr);
             margin-top: 20px;
+        }
+
+        body.body-conv .handled-context-subcard {
+            padding: 18px 20px;
+            border: 1px solid rgba(216, 223, 230, 0.9);
+            border-radius: 0;
+            background: #f8fafc;
+        }
+
+        body.body-conv .handled-context-subcard .handled-eyebrow {
+            margin-bottom: 6px;
+        }
+
+        body.body-conv .handled-context-subcard h4 {
+            margin-bottom: 14px;
         }
 
         @media (max-width: 1100px) {

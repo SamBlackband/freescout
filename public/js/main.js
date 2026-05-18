@@ -5746,7 +5746,7 @@ function adjustCustomerSidebarHeight()
 	layout.css('min-height', '');
 
 	if (sidebar_h > layout_h) {
-		layout.css('min-height', (sidebar_h+32)+'px');
+		layout.css('min-height', (sidebar_h+48)+'px');
 	}
 }
 

@@ -84,7 +84,7 @@
                     </div>
                 @endif
 
-                @if ($handled_actions && (!empty($handled_actions['booking_url']) || !empty($handled_actions['instagram_url']) || !empty($handled_actions['mailto_business'])))
+                @if ($handled_actions && (!empty($handled_actions['booking_url']) || !empty($handled_actions['instagram_url'])))
                     <div class="handled-customer-links">
                         @if (!empty($handled_actions['booking_url']))
                             <a href="{{ $handled_actions['booking_url'] }}" target="_blank">{{ __('Open booking page') }}</a>
@@ -92,15 +92,12 @@
                         @if (!empty($handled_actions['instagram_url']))
                             <a href="{{ $handled_actions['instagram_url'] }}" target="_blank">{{ __('Open Instagram') }}</a>
                         @endif
-                        @if (!empty($handled_actions['mailto_business']))
-                            <a href="{{ $handled_actions['mailto_business'] }}">{{ __('Email business') }}</a>
-                        @endif
                     </div>
                 @endif
 
                 <div class="handled-context-detail-grid">
                     @if ($customer->company || $customer->job_title || $customer_location || $customer->address || $customer->zip || $ordered_emails || $phones || $websites || $social_profiles || $customer->notes)
-                        <div>
+                        <section class="handled-context-subcard">
                             <div class="handled-eyebrow">{{ __('Customer profile') }}</div>
                             <h4>{{ __('Extended details') }}</h4>
                             <dl class="handled-context-grid">
@@ -157,47 +154,57 @@
                             @endif
                             @action('customer.profile.extra', $customer, $conversation ?? '')
                             @action('customer.profile_data', $customer, $conversation ?? '')
-                        </div>
+                        </section>
                     @endif
 
-                    <div>
-                        @if ($handled_business && (!empty($handled_business['plan_tier']) || !empty($handled_business['brand_id']) || !empty($handled_business['instagram_handle']) || !empty($handled_business['booking_url'])))
-                            <div>
-                                <div class="handled-eyebrow">{{ __('Handled account') }}</div>
-                                <h4>{{ __('Extended account details') }}</h4>
-                                <dl class="handled-context-grid">
-                                    @if (!empty($handled_business['plan_tier']))
-                                        <div>
-                                            <dt>{{ __('Plan') }}</dt>
-                                            <dd>{{ $handled_business['plan_tier'] }}</dd>
-                                        </div>
-                                    @endif
-                                    @if (!empty($handled_business['brand_id']))
-                                        <div>
-                                            <dt>{{ __('Brand') }}</dt>
-                                            <dd>{{ $handled_business['brand_id'] }}</dd>
-                                        </div>
-                                    @endif
-                                    @if (!empty($handled_business['instagram_handle']))
-                                        <div>
-                                            <dt>{{ __('Instagram') }}</dt>
-                                            <dd>{{ $handled_business['instagram_handle'] }}</dd>
-                                        </div>
-                                    @endif
-                                    @if (!empty($handled_business['booking_url']))
-                                        <div>
-                                            <dt>{{ __('Booking') }}</dt>
-                                            <dd><a class="handled-context-link" href="{{ $handled_business['booking_url'] }}" target="_blank">{{ __('Open link') }}</a></dd>
-                                        </div>
-                                    @endif
-                                </dl>
-                            </div>
-                        @endif
+                    @if ($handled_business && (!empty($handled_business['plan_tier']) || !empty($handled_business['brand_id']) || !empty($handled_business['instagram_handle']) || !empty($handled_business['booking_url']) || !empty($handled_business['subscription_status']) || array_key_exists('responses_paused', $handled_business)))
+                        <section class="handled-context-subcard">
+                            <div class="handled-eyebrow">{{ __('Handled account') }}</div>
+                            <h4>{{ __('Operational details') }}</h4>
+                            <dl class="handled-context-grid">
+                                @if (!empty($handled_business['plan_tier']))
+                                    <div>
+                                        <dt>{{ __('Plan') }}</dt>
+                                        <dd>{{ $handled_business['plan_tier'] }}</dd>
+                                    </div>
+                                @endif
+                                @if (!empty($handled_business['brand_id']))
+                                    <div>
+                                        <dt>{{ __('Brand') }}</dt>
+                                        <dd>{{ $handled_business['brand_id'] }}</dd>
+                                    </div>
+                                @endif
+                                @if (!empty($handled_business['instagram_handle']))
+                                    <div>
+                                        <dt>{{ __('Instagram') }}</dt>
+                                        <dd>{{ $handled_business['instagram_handle'] }}</dd>
+                                    </div>
+                                @endif
+                                @if (!empty($handled_business['booking_url']))
+                                    <div>
+                                        <dt>{{ __('Booking') }}</dt>
+                                        <dd><a class="handled-context-link" href="{{ $handled_business['booking_url'] }}" target="_blank">{{ __('Open link') }}</a></dd>
+                                    </div>
+                                @endif
+                                @if (!empty($handled_business['subscription_status']))
+                                    <div>
+                                        <dt>{{ __('Subscription') }}</dt>
+                                        <dd>{{ $handled_business['subscription_status'] }}</dd>
+                                    </div>
+                                @endif
+                                <div>
+                                    <dt>{{ __('Responses paused') }}</dt>
+                                    <dd>{{ !empty($handled_business['responses_paused']) ? __('Yes') : __('No') }}</dd>
+                                </div>
+                            </dl>
+                        </section>
+                    @endif
 
-                        <div class="handled-context-section">
+                    @if ($handled_setup || $handled_support_summary || $handled_business_metrics || $handled_matched_by)
+                        <section class="handled-context-subcard">
                             <div class="handled-eyebrow">{{ __('Visibility') }}</div>
                             <h4>{{ __('Support + setup state') }}</h4>
-                            @if ($handled_setup || $handled_support_summary || $handled_business_metrics || $handled_business)
+                            @if ($handled_setup || $handled_support_summary || $handled_business_metrics || $handled_matched_by)
                                 <dl class="handled-context-grid">
                                     @if ($handled_support_summary)
                                         <div>
@@ -221,16 +228,6 @@
                                             <dd>{{ $handled_setup['first_incomplete'] ?? __('Complete') }}</dd>
                                         </div>
                                     @endif
-                                    @if ($handled_business)
-                                        <div>
-                                            <dt>{{ __('Subscription') }}</dt>
-                                            <dd>{{ $handled_business['subscription_status'] ?? '—' }}</dd>
-                                        </div>
-                                        <div>
-                                            <dt>{{ __('Responses paused') }}</dt>
-                                            <dd>{{ !empty($handled_business['responses_paused']) ? __('Yes') : __('No') }}</dd>
-                                        </div>
-                                    @endif
                                     @if ($handled_business_metrics)
                                         <div>
                                             <dt>{{ __('Customer records') }}</dt>
@@ -243,24 +240,27 @@
                                             </div>
                                         @endif
                                     @endif
+                                    @if ($handled_matched_by)
+                                        <div>
+                                            <dt>{{ __('Context matched by') }}</dt>
+                                            <dd>{{ $handled_matched_by }}</dd>
+                                        </div>
+                                    @endif
                                 </dl>
                             @else
                                 <p class="handled-context-empty">{{ __('No setup or support visibility data is available yet.') }}</p>
                             @endif
-                        </div>
-                    </div>
+                        </section>
+                    @endif
                 </div>
             </section>
 
             <section class="handled-conversation-footer-card handled-context-card handled-context-panel">
                 <div class="handled-context-card-header">
                     <div>
-                        <div class="handled-eyebrow">{{ __('Linked ticket') }}</div>
-                        <h4>@if ($handled_ticket)#{{ $handled_ticket['id'] ?? '—' }} {{ $handled_ticket['subject'] ?? __('Support request') }}@else{{ __('Support request activity') }}@endif</h4>
+                        <div class="handled-eyebrow">{{ __('Ticket activity') }}</div>
+                        <h4>{{ __('Recent synced support activity') }}</h4>
                     </div>
-                    @if ($handled_matched_by)
-                        <span class="fs-tag"><span class="fs-tag-name">{{ __('Matched via :source', ['source' => $handled_matched_by]) }}</span></span>
-                    @endif
                 </div>
                 @if ($handled_ticket)
                     <dl class="handled-context-grid">
