@@ -60,6 +60,7 @@
     $handled_channel_breakdown = is_array($handled_diagnostics['channel_breakdown'] ?? null) ? $handled_diagnostics['channel_breakdown'] : [];
     $handled_activity_items = is_array($handled_activity['items'] ?? null) ? $handled_activity['items'] : [];
     $handled_business_id = $handled_business['business_id'] ?? ($handled_business['id'] ?? null);
+    $handled_business_name = is_array($handled_business) ? ($handled_business['name'] ?? null) : null;
     $handled_ticket_id = $handled_ticket['ticket_id'] ?? ($handled_ticket['id'] ?? null);
     $handled_customer_email = !empty($conversation->customer_email) ? $conversation->customer_email : ($ordered_emails[0] ?? null);
     $handled_responses_paused = !empty($handled_business['responses_paused']);
@@ -405,7 +406,7 @@
                         <dl class="handled-context-grid">
                             <div>
                                 <dt>{{ __('Handled business') }}</dt>
-                                <dd>{{ $handled_business['name'] ?? __('Unavailable') }}</dd>
+                                <dd>{{ $handled_business_name ?: __('Unavailable') }}</dd>
                             </div>
                             <div>
                                 <dt>{{ __('Responses paused') }}</dt>
