@@ -63,11 +63,11 @@
     $handled_ticket_id = $handled_ticket['ticket_id'] ?? ($handled_ticket['id'] ?? null);
     $handled_customer_email = !empty($conversation->customer_email) ? $conversation->customer_email : ($ordered_emails[0] ?? null);
     $handled_responses_paused = !empty($handled_business['responses_paused']);
-    $handled_support_writeback_visible = (bool) config('app.handled_support_writeback_ui_enabled');
-    $handled_support_activity_visible = $handled_support_writeback_visible && (bool) config('app.handled_support_writeback_activity_enabled');
-    $handled_support_actions_visible = $handled_support_writeback_visible && (bool) config('app.handled_support_writeback_actions_enabled');
-    $handled_support_action_js_enabled = $handled_support_actions_visible && (bool) config('app.handled_support_writeback_action_js_enabled');
-    $handled_support_action_enabled = $handled_support_action_js_enabled && !empty($handled_business_id) && !empty($conversation->id);
+    $handled_support_writeback_visible = !empty($handled_business_id) || !empty($handled_activity_items);
+    $handled_support_activity_visible = $handled_support_writeback_visible;
+    $handled_support_actions_visible = !empty($handled_business_id) && !empty($conversation->id);
+    $handled_support_action_js_enabled = $handled_support_actions_visible;
+    $handled_support_action_enabled = $handled_support_actions_visible;
 @endphp
 
 @if ($handled_business || $handled_business_metrics || $handled_owner || $handled_account_health || $handled_diagnostics || $handled_history || $handled_actions || $handled_setup || $handled_support_summary || $handled_ticket || $handled_activity || $customer->company || $customer->job_title || $customer_location || $websites || $social_profiles || $customer->notes)
