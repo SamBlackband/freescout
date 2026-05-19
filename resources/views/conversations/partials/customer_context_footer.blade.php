@@ -62,6 +62,14 @@
     $handled_business_id = $handled_business['business_id'] ?? ($handled_business['id'] ?? null);
     $handled_business_name = is_array($handled_business) ? ($handled_business['name'] ?? null) : null;
     $handled_ticket_id = $handled_ticket['ticket_id'] ?? ($handled_ticket['id'] ?? null);
+    $handled_ticket_message_count = is_array($handled_ticket) ? ($handled_ticket['message_count'] ?? null) : null;
+    $handled_ticket_last_message_at = is_array($handled_ticket) ? ($handled_ticket['last_message_at'] ?? null) : null;
+    $handled_ticket_portal_reply_enabled = is_array($handled_ticket) && !empty($handled_ticket['portal_reply_enabled']);
+    $handled_ticket_messages = is_array($handled_ticket['messages'] ?? null)
+        ? array_values(array_filter($handled_ticket['messages'], function ($handled_message) {
+            return is_array($handled_message);
+        }))
+        : [];
     $handled_customer_email = !empty($conversation->customer_email) ? $conversation->customer_email : ($ordered_emails[0] ?? null);
     $handled_responses_paused = !empty($handled_business['responses_paused']);
     $handled_support_writeback_visible = !empty($handled_business_id) || !empty($handled_activity_items);
@@ -583,19 +591,19 @@
                         <h4>{{ __('Recent synced support activity') }}</h4>
                         @if ($handled_ticket)
                             <dl class="handled-context-grid">
-                                @if (!empty($handled_ticket['message_count']))
+                                @if (!empty($handled_ticket_message_count))
                                     <div>
                                         <dt>{{ __('Messages synced') }}</dt>
-                                        <dd>{{ $handled_ticket['message_count'] }}</dd>
+                                        <dd>{{ $handled_ticket_message_count }}</dd>
                                     </div>
                                 @endif
-                                @if (!empty($handled_ticket['last_message_at']))
+                                @if (!empty($handled_ticket_last_message_at))
                                     <div>
                                         <dt>{{ __('Last message') }}</dt>
-                                        <dd>{{ $handled_ticket['last_message_at'] }}</dd>
+                                        <dd>{{ $handled_ticket_last_message_at }}</dd>
                                     </div>
                                 @endif
-                                @if (!empty($handled_ticket['portal_reply_enabled']))
+                                @if ($handled_ticket_portal_reply_enabled)
                                     <div>
                                         <dt>{{ __('Portal reply') }}</dt>
                                         <dd>{{ __('Enabled') }}</dd>
@@ -603,9 +611,9 @@
                                 @endif
                             </dl>
                         @endif
-                        @if ($handled_ticket && !empty($handled_ticket['messages']) && is_array($handled_ticket['messages']))
+                        @if ($handled_ticket && $handled_ticket_messages)
                             <div class="handled-support-timeline">
-                                @foreach ($handled_ticket['messages'] as $handled_message)
+                                @foreach ($handled_ticket_messages as $handled_message)
                                     <div class="handled-support-timeline-item">
                                         <div class="handled-support-timeline-meta">
                                             <strong>{{ ($handled_message['direction'] ?? '') === 'outbound' ? __('Support reply') : __('Customer message') }}</strong>

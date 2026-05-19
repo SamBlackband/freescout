@@ -6,6 +6,13 @@
         $handled_setup = $handled_setup ?? (is_array($handled_support_context) ? ($handled_support_context['setup'] ?? null) : null);
         $handled_support_summary = $handled_support_summary ?? (is_array($handled_support_context) ? ($handled_support_context['support_summary'] ?? null) : null);
         $handled_ticket = $handled_ticket ?? (is_array($handled_support_context) ? ($handled_support_context['ticket'] ?? null) : null);
+        $handled_business_name = is_array($handled_business) ? ($handled_business['name'] ?? null) : null;
+        $handled_business_owner_name = is_array($handled_business) ? ($handled_business['owner_name'] ?? null) : null;
+        $handled_ticket_title = is_array($handled_ticket) ? ($handled_ticket['subject'] ?? null) : null;
+        $handled_ticket_number = is_array($handled_ticket) ? ($handled_ticket['id'] ?? null) : null;
+        $handled_ticket_status = is_array($handled_ticket) ? ($handled_ticket['status'] ?? null) : null;
+        $handled_ticket_priority = is_array($handled_ticket) ? ($handled_ticket['priority'] ?? null) : null;
+        $handled_ticket_sync_status = is_array($handled_ticket) ? ($handled_ticket['sync_status'] ?? null) : null;
     @endphp
     <style {!! \Helper::cspNonceAttr() !!}>
         .handled-context-panel {
@@ -271,11 +278,11 @@
                 <dl class="handled-context-grid">
                     <div>
                         <dt>{{ __('Business') }}</dt>
-                        <dd>{{ $handled_business['name'] ?? '—' }}</dd>
+                        <dd>{{ $handled_business_name ?: '—' }}</dd>
                     </div>
                     <div>
                         <dt>{{ __('Owner') }}</dt>
-                        <dd>{{ $handled_business['owner_name'] ?? '—' }}</dd>
+                        <dd>{{ $handled_business_owner_name ?: '—' }}</dd>
                     </div>
                 </dl>
             @else
@@ -285,21 +292,21 @@
         <div class="handled-context-section">
             <div>
                 <div class="handled-eyebrow">{{ __('Linked ticket') }}</div>
-                <h4>@if ($handled_ticket)#{{ $handled_ticket['id'] ?? '—' }} {{ $handled_ticket['subject'] ?? __('Support request') }}@else{{ __('Support request') }}@endif</h4>
+                <h4>@if ($handled_ticket)#{{ $handled_ticket_number ?: '—' }} {{ $handled_ticket_title ?: __('Support request') }}@else{{ __('Support request') }}@endif</h4>
             </div>
             @if ($handled_ticket)
                 <dl class="handled-context-grid">
                     <div>
                         <dt>{{ __('Status') }}</dt>
-                        <dd>{{ $handled_ticket['status'] ?? '—' }}</dd>
+                        <dd>{{ $handled_ticket_status ?: '—' }}</dd>
                     </div>
                     <div>
                         <dt>{{ __('Priority') }}</dt>
-                        <dd>{{ $handled_ticket['priority'] ?? '—' }}</dd>
+                        <dd>{{ $handled_ticket_priority ?: '—' }}</dd>
                     </div>
                     <div>
                         <dt>{{ __('Sync state') }}</dt>
-                        <dd>{{ $handled_ticket['sync_status'] ?? '—' }}</dd>
+                        <dd>{{ $handled_ticket_sync_status ?: '—' }}</dd>
                     </div>
                 </dl>
             @else
