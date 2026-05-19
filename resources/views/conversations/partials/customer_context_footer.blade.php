@@ -9,6 +9,7 @@
     $handled_setup = $handled_setup ?? (is_array($handled_support_context) ? ($handled_support_context['setup'] ?? null) : null);
     $handled_support_summary = $handled_support_summary ?? (is_array($handled_support_context) ? ($handled_support_context['support_summary'] ?? null) : null);
     $handled_ticket = $handled_ticket ?? (is_array($handled_support_context) ? ($handled_support_context['ticket'] ?? null) : null);
+    $handled_activity = is_array($handled_support_context) ? ($handled_support_context['activity'] ?? null) : null;
     $handled_actions = is_array($handled_support_context) ? ($handled_support_context['actions'] ?? null) : null;
     $handled_matched_by = is_array($handled_support_context) ? ($handled_support_context['matched_by'] ?? null) : null;
     $customer_location = array_filter([$customer->city, $customer->state, $customer->getCountryName()]);
@@ -57,9 +58,19 @@
     $handled_recent_email_events = is_array($handled_history['recent_email_events'] ?? null) ? $handled_history['recent_email_events'] : [];
     $handled_recent_retries = is_array($handled_history['recent_outbound_retries'] ?? null) ? $handled_history['recent_outbound_retries'] : [];
     $handled_channel_breakdown = is_array($handled_diagnostics['channel_breakdown'] ?? null) ? $handled_diagnostics['channel_breakdown'] : [];
+    $handled_activity_items = is_array($handled_activity['items'] ?? null) ? $handled_activity['items'] : [];
+    $handled_business_id = $handled_business['business_id'] ?? ($handled_business['id'] ?? null);
+    $handled_ticket_id = $handled_ticket['ticket_id'] ?? ($handled_ticket['id'] ?? null);
+    $handled_customer_email = !empty($conversation->customer_email) ? $conversation->customer_email : ($ordered_emails[0] ?? null);
+    $handled_responses_paused = !empty($handled_business['responses_paused']);
+    $handled_support_writeback_visible = !empty($handled_business_id) || !empty($handled_activity_items);
+    $handled_support_activity_visible = $handled_support_writeback_visible;
+    $handled_support_actions_visible = !empty($handled_business_id) && !empty($conversation->id);
+    $handled_support_action_js_enabled = false;
+    $handled_support_action_enabled = false;
 @endphp
 
-@if ($handled_business || $handled_business_metrics || $handled_owner || $handled_account_health || $handled_diagnostics || $handled_history || $handled_actions || $handled_setup || $handled_support_summary || $handled_ticket || $customer->company || $customer->job_title || $customer_location || $websites || $social_profiles || $customer->notes)
+@if ($handled_business || $handled_business_metrics || $handled_owner || $handled_account_health || $handled_diagnostics || $handled_history || $handled_actions || $handled_setup || $handled_support_summary || $handled_ticket || $handled_activity || $customer->company || $customer->job_title || $customer_location || $websites || $social_profiles || $customer->notes)
     <div class="handled-conversation-footer">
         <div class="handled-conversation-footer-grid">
             <section class="handled-conversation-footer-card handled-context-card handled-context-panel">
@@ -388,6 +399,53 @@
                 @endif
 
                 <div class="handled-context-detail-grid">
+                    @if ($handled_support_actions_visible)
+                        <section class="handled-context-subcard">
+                            <div class="handled-eyebrow">{{ __('Writeback actions') }}</div>
+                            <h4>{{ __('Backend-managed controls') }}</h4>
+                            <dl class="handled-context-grid">
+                                <div>
+                                    <dt>{{ __('Responses paused') }}</dt>
+                                    <dd>{{ $handled_responses_paused ? __('Yes') : __('No') }}</dd>
+                                </div>
+                                @if ($handled_customer_email)
+                                    <div>
+                                        <dt>{{ __('Reset email target') }}</dt>
+                                        <dd>{{ $handled_customer_email }}</dd>
+                                    </div>
+                                @endif
+                            </dl>
+                            @if ($handled_support_action_enabled)
+                                <p class="handled-context-empty">{{ __('Confirm each action to proxy it through Handled securely.') }}</p>
+                                <div class="handled-writeback-actions">
+                                    <button
+                                        type="button"
+                                        class="btn btn-default btn-sm handled-support-action"
+                                        data-action="handled_support_password_reset"
+                                        data-business-id="{{ $handled_business_id }}"
+                                        data-ticket-id="{{ $handled_ticket_id }}"
+                                        data-customer-email="{{ $handled_customer_email }}"
+                                        data-confirm="{{ __('Send the standard password reset email now?') }}"
+                                    >{{ __('Send password reset email') }}</button>
+                                    <button
+                                        type="button"
+                                        class="btn btn-default btn-sm handled-support-action"
+                                        data-action="handled_support_account_state"
+                                        data-business-id="{{ $handled_business_id }}"
+                                        data-ticket-id="{{ $handled_ticket_id }}"
+                                        data-customer-email="{{ $handled_customer_email }}"
+                                        data-responses-paused="{{ $handled_responses_paused ? 0 : 1 }}"
+                                        data-confirm="{{ $handled_responses_paused ? __('Resume automated responses for this business?') : __('Pause automated responses for this business?') }}"
+                                    >{{ $handled_responses_paused ? __('Resume responses') : __('Pause responses') }}</button>
+                                </div>
+                            @elseif (!empty($handled_business_id) && !empty($conversation->id))
+                                <p class="handled-context-empty">{{ __('Writeback button rendering is enabled, but action JS is still disabled for diagnostics.') }}</p>
+                            @else
+                                <p class="handled-context-empty">{{ __('Writeback controls are unavailable until Handled business context is loaded.') }}</p>
+                            @endif
+                        </section>
+                    @endif
+
                     @if ($handled_action_links)
                         <section class="handled-context-subcard">
                             <div class="handled-eyebrow">{{ __('Safe actions') }}</div>
@@ -469,6 +527,56 @@
                         </section>
                     @endif
 
+                    @if ($handled_support_activity_visible)
+                        <section class="handled-context-subcard">
+                            <div class="handled-eyebrow">{{ __('Backend activity') }}</div>
+                            <h4>{{ __('Recent writeback activity') }}</h4>
+                            @if ($handled_activity_items)
+                                <div class="handled-support-timeline">
+                                    @foreach ($handled_activity_items as $handled_activity_item)
+                                        @php
+                                            $handled_activity_title = $handled_activity_item['title']
+                                                ?? $handled_activity_item['message']
+                                                ?? $handled_activity_item['event']
+                                                ?? $handled_activity_item['type']
+                                                ?? __('Activity');
+                                            $handled_activity_status = $handled_activity_item['status'] ?? null;
+                                            $handled_activity_time = $handled_activity_item['occurred_at']
+                                                ?? $handled_activity_item['created_at']
+                                                ?? $handled_activity_item['timestamp']
+                                                ?? null;
+                                            $handled_activity_detail = $handled_activity_item['description']
+                                                ?? $handled_activity_item['detail']
+                                                ?? $handled_activity_item['summary']
+                                                ?? null;
+                                            $handled_activity_actor = $handled_activity_item['actor']
+                                                ?? $handled_activity_item['initiated_by']
+                                                ?? null;
+                                        @endphp
+                                        <div class="handled-support-timeline-item">
+                                            <div class="handled-support-timeline-meta">
+                                                <strong>
+                                                    {{ ucfirst(str_replace(['_', '-'], ' ', $handled_activity_title)) }}
+                                                    @if ($handled_activity_status)
+                                                        · {{ ucfirst(str_replace(['_', '-'], ' ', $handled_activity_status)) }}
+                                                    @endif
+                                                </strong>
+                                                <span>{{ $handled_activity_time ?: '—' }}</span>
+                                            </div>
+                                            @if ($handled_activity_detail)
+                                                <p>{{ \Illuminate\Support\Str::limit($handled_activity_detail, 240) }}</p>
+                                            @elseif ($handled_activity_actor)
+                                                <p>{{ $handled_activity_actor }}</p>
+                                            @endif
+                                        </div>
+                                    @endforeach
+                                </div>
+                            @else
+                                <p class="handled-context-empty">{{ __('No backend activity is available yet.') }}</p>
+                            @endif
+                        </section>
+                    @endif
+
                     <section class="handled-context-subcard">
                         <div class="handled-eyebrow">{{ __('Ticket activity') }}</div>
                         <h4>{{ __('Recent synced support activity') }}</h4>
@@ -526,4 +634,5 @@
             @action('conversation.after_prev_convs', $customer, $conversation, $mailbox)
         @endif
     </div>
+
 @endif
