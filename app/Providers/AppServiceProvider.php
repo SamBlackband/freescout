@@ -51,7 +51,7 @@ class AppServiceProvider extends ServiceProvider
             }
 
             return [
-                'handled_saved_replies' => \App\Option::get('handled_saved_replies', []),
+                'handled_saved_replies' => app(\App\Services\HandledSavedRepliesService::class)->getStoredReplies(),
             ];
         }, 20, 2);
 
@@ -63,6 +63,7 @@ class AppServiceProvider extends ServiceProvider
             return [
                 'validator_rules' => [
                     'settings.handled_saved_replies' => 'array',
+                    'settings.handled_saved_replies.*.category' => 'nullable|string|max:80',
                     'settings.handled_saved_replies.*.name' => 'nullable|string|max:80',
                     'settings.handled_saved_replies.*.body' => 'nullable|string|max:20000',
                 ],
@@ -88,28 +89,7 @@ class AppServiceProvider extends ServiceProvider
             }
 
             $savedReplies = $request->input('settings.handled_saved_replies', []);
-            if (!is_array($savedReplies)) {
-                $savedReplies = [];
-            }
-
-            $sanitizedReplies = [];
-            foreach ($savedReplies as $savedReply) {
-                $name = trim((string)($savedReply['name'] ?? ''));
-                $body = trim((string)($savedReply['body'] ?? ''));
-
-                if ($name === '' && $body === '') {
-                    continue;
-                }
-
-                if ($name === '' || $body === '') {
-                    continue;
-                }
-
-                $sanitizedReplies[] = [
-                    'name' => mb_substr($name, 0, 80),
-                    'body' => \Helper::stripDangerousTags($body),
-                ];
-            }
+            $sanitizedReplies = app(\App\Services\HandledSavedRepliesService::class)->normalizeReplies(is_array($savedReplies) ? $savedReplies : []);
 
             $settings = $request->input('settings', []);
             $settings['handled_saved_replies'] = $sanitizedReplies;
@@ -119,31 +99,10 @@ class AppServiceProvider extends ServiceProvider
         }, 20, 2);
 
         \Eventy::addAction('conv_editor.editor_toolbar_prepend', function ($mailbox, $conversation) {
-            $savedReplies = \App\Option::get('handled_saved_replies', []);
-            if (!is_array($savedReplies)) {
-                $savedReplies = [];
-            }
-
-            $savedReplies = array_values(array_filter(array_map(function ($savedReply) use ($conversation) {
-                $name = trim((string)($savedReply['name'] ?? ''));
-                $body = trim((string)($savedReply['body'] ?? ''));
-
-                if ($name === '' || $body === '') {
-                    return null;
-                }
-
-                if ($conversation) {
-                    $body = $conversation->replaceTextVars($body);
-                }
-
-                return [
-                    'name' => $name,
-                    'body' => \Helper::stripDangerousTags($body),
-                ];
-            }, $savedReplies)));
-
             echo view('conversations.partials.saved_replies_toolbar', [
-                'handled_saved_replies' => $savedReplies,
+                'handled_saved_replies' => app(\App\Services\HandledSavedRepliesService::class)->getComposerReplies($conversation),
+                'handled_saved_replies_mailbox_id' => $mailbox ? $mailbox->id : null,
+                'handled_saved_replies_conversation_id' => $conversation ? $conversation->id : null,
             ])->render();
         }, 20, 2);
 

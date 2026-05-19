@@ -2,7 +2,7 @@
     $savedReplies = old('settings.handled_saved_replies', $settings['handled_saved_replies'] ?? []);
     if (!is_array($savedReplies) || !count($savedReplies)) {
         $savedReplies = [
-            ['name' => '', 'body' => ''],
+            ['category' => '', 'name' => '', 'body' => ''],
         ];
     }
 @endphp
@@ -25,9 +25,24 @@
             <div class="panel panel-default handled-saved-reply-item" data-index="{{ $index }}">
                 <div class="panel-body">
                     <div class="form-group{{ $errors->has('settings.handled_saved_replies.'.$index.'.name') ? ' has-error' : '' }}">
+                        <label for="handled_saved_reply_category_{{ $index }}" class="col-sm-2 control-label">{{ __('Category') }}</label>
+
+                        <div class="col-sm-3">
+                            <input
+                                id="handled_saved_reply_category_{{ $index }}"
+                                type="text"
+                                class="form-control"
+                                name="settings[handled_saved_replies][{{ $index }}][category]"
+                                value="{{ $savedReply['category'] ?? '' }}"
+                                maxlength="80"
+                                placeholder="{{ __('Billing / Onboarding / Follow-up') }}"
+                            >
+                            @include('partials/field_error', ['field' => 'settings.handled_saved_replies.'.$index.'.category'])
+                        </div>
+
                         <label for="handled_saved_reply_name_{{ $index }}" class="col-sm-2 control-label">{{ __('Name') }}</label>
 
-                        <div class="col-sm-6">
+                        <div class="col-sm-3">
                             <input
                                 id="handled_saved_reply_name_{{ $index }}"
                                 type="text"
@@ -84,9 +99,22 @@
     <div class="panel panel-default handled-saved-reply-item" data-index="__INDEX__">
         <div class="panel-body">
             <div class="form-group">
+                <label for="handled_saved_reply_category___INDEX__" class="col-sm-2 control-label">{{ __('Category') }}</label>
+
+                <div class="col-sm-3">
+                    <input
+                        id="handled_saved_reply_category___INDEX__"
+                        type="text"
+                        class="form-control"
+                        name="settings[handled_saved_replies][__INDEX__][category]"
+                        maxlength="80"
+                        placeholder="{{ __('Billing / Onboarding / Follow-up') }}"
+                    >
+                </div>
+
                 <label for="handled_saved_reply_name___INDEX__" class="col-sm-2 control-label">{{ __('Name') }}</label>
 
-                <div class="col-sm-6">
+                <div class="col-sm-3">
                     <input
                         id="handled_saved_reply_name___INDEX__"
                         type="text"

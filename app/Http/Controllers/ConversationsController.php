@@ -19,6 +19,7 @@ use App\Job;
 use App\Mailbox;
 use App\MailboxUser;
 use App\SendLog;
+use App\Services\HandledSavedRepliesService;
 use App\Services\HandledSupportContextService;
 use App\Thread;
 use App\User;
@@ -760,6 +761,33 @@ class ConversationsController extends Controller
                     } else {
                         $response['msg'] = !empty($result['message']) ? $result['message'] : __('Unable to update account state');
                     }
+                }
+                break;
+
+            case 'handled_saved_replies_save':
+                $conversation = $this->getHandledSupportActionConversation($request);
+                $mailbox = $this->getHandledSavedRepliesMailbox($request, $conversation);
+                $savedReplies = json_decode((string) $request->input('saved_replies_json'), true);
+
+                if (!$mailbox) {
+                    $response['msg'] = __('Mailbox not found');
+                }
+                if (!$response['msg'] && !$user->can('view', $mailbox)) {
+                    $response['msg'] = __('Not enough permissions');
+                }
+                if (!$response['msg'] && $conversation && !$user->can('update', $conversation)) {
+                    $response['msg'] = __('Not enough permissions');
+                }
+                if (!$response['msg'] && !is_array($savedReplies)) {
+                    $response['msg'] = __('Saved replies payload is invalid');
+                }
+                if (!$response['msg']) {
+                    $savedRepliesService = app(HandledSavedRepliesService::class);
+                    $savedRepliesService->saveReplies($savedReplies);
+
+                    $response['status'] = 'success';
+                    $response['msg'] = __('Saved replies updated');
+                    $response['saved_replies'] = $savedRepliesService->getComposerReplies($conversation);
                 }
                 break;
 
@@ -2913,6 +2941,19 @@ class ConversationsController extends Controller
         }
 
         return Conversation::find($request->conversation_id);
+    }
+
+    protected function getHandledSavedRepliesMailbox(Request $request, $conversation = null)
+    {
+        if ($conversation) {
+            return $conversation->mailbox;
+        }
+
+        if (!$request->mailbox_id) {
+            return null;
+        }
+
+        return Mailbox::find($request->mailbox_id);
     }
 
     protected function buildHandledSupportActionPayload(Request $request, User $user, array $extra = [])
