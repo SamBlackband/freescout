@@ -457,7 +457,7 @@ return [
     'handled_support_sync_secret'  => env('HANDLED_SUPPORT_SYNC_SECRET', ''),
     'handled_support_writeback_ui_enabled' => env('HANDLED_SUPPORT_WRITEBACK_UI_ENABLED', true),
     'handled_support_writeback_activity_enabled' => env('HANDLED_SUPPORT_WRITEBACK_ACTIVITY_ENABLED', true),
-    'handled_support_writeback_actions_enabled' => env('HANDLED_SUPPORT_WRITEBACK_ACTIONS_ENABLED', false),
+    'handled_support_writeback_actions_enabled' => env('HANDLED_SUPPORT_WRITEBACK_ACTIONS_ENABLED', true),
     'handled_support_writeback_action_js_enabled' => env('HANDLED_SUPPORT_WRITEBACK_ACTION_JS_ENABLED', false),
 
     /*
