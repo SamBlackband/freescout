@@ -120,8 +120,8 @@ class AppServiceProvider extends ServiceProvider
 
         \Eventy::addAction('conv_editor.editor_toolbar_prepend', function ($mailbox, $conversation) {
             $savedReplies = \App\Option::get('handled_saved_replies', []);
-            if (!is_array($savedReplies) || empty($savedReplies)) {
-                return;
+            if (!is_array($savedReplies)) {
+                $savedReplies = [];
             }
 
             $savedReplies = array_values(array_filter(array_map(function ($savedReply) use ($conversation) {
@@ -141,10 +141,6 @@ class AppServiceProvider extends ServiceProvider
                     'body' => \Helper::stripDangerousTags($body),
                 ];
             }, $savedReplies)));
-
-            if (empty($savedReplies)) {
-                return;
-            }
 
             echo view('conversations.partials.saved_replies_toolbar', [
                 'handled_saved_replies' => $savedReplies,
