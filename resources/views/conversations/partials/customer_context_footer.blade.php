@@ -66,8 +66,8 @@
     $handled_support_writeback_visible = !empty($handled_business_id) || !empty($handled_activity_items);
     $handled_support_activity_visible = $handled_support_writeback_visible;
     $handled_support_actions_visible = !empty($handled_business_id) && !empty($conversation->id);
-    $handled_support_action_js_enabled = false;
-    $handled_support_action_enabled = false;
+    $handled_support_action_js_enabled = $handled_support_actions_visible;
+    $handled_support_action_enabled = $handled_support_actions_visible;
 @endphp
 
 @if ($handled_business || $handled_business_metrics || $handled_owner || $handled_account_health || $handled_diagnostics || $handled_history || $handled_actions || $handled_setup || $handled_support_summary || $handled_ticket || $handled_activity || $customer->company || $customer->job_title || $customer_location || $websites || $social_profiles || $customer->notes)
@@ -635,4 +635,61 @@
         @endif
     </div>
 
+    @if ($handled_support_action_js_enabled)
+        <script>
+            jQuery(function($) {
+                $(document)
+                    .off('click.handledSupportAction', '.handled-support-action')
+                    .on('click.handledSupportAction', '.handled-support-action', function(event) {
+                        event.preventDefault();
+
+                        var button = $(this);
+                        var confirmMessage = button.data('confirm');
+
+                        if (button.prop('disabled')) {
+                            return;
+                        }
+
+                        if (confirmMessage && !window.confirm(confirmMessage)) {
+                            return;
+                        }
+
+                        var data = {
+                            action: button.data('action'),
+                            conversation_id: {{ (int) $conversation->id }},
+                            business_id: button.data('business-id')
+                        };
+
+                        if (button.data('ticket-id')) {
+                            data.ticket_id = button.data('ticket-id');
+                        }
+
+                        if (button.data('customer-email')) {
+                            data.customer_email = button.data('customer-email');
+                        }
+
+                        if (typeof button.data('responses-paused') !== 'undefined') {
+                            data.responses_paused = button.data('responses-paused');
+                        }
+
+                        button.prop('disabled', true);
+
+                        fsAjax(data, laroute.route('conversations.ajax'), function(response) {
+                            if (isAjaxSuccess(response)) {
+                                showFloatingAlert('success', response.msg, true);
+                                window.setTimeout(function() {
+                                    window.location.reload();
+                                }, 900);
+                            } else {
+                                button.prop('disabled', false);
+                                showAjaxError(response, true);
+                            }
+                        }, true, function() {
+                            button.prop('disabled', false);
+                            showFloatingAlert('error', '{{ addslashes(__('An error occurred')) }}', true);
+                        });
+                    });
+            });
+        </script>
+    @endif
 @endif
