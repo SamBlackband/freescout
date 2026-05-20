@@ -2,6 +2,15 @@
     $handled_saved_replies = is_array($handled_saved_replies ?? null) ? array_values($handled_saved_replies) : [];
     $handled_saved_replies_mailbox_id = $handled_saved_replies_mailbox_id ?? null;
     $handled_saved_replies_conversation_id = $handled_saved_replies_conversation_id ?? null;
+    $handled_saved_reply_all_categories_text = __('All categories');
+    $handled_saved_reply_empty_category_text = __('No saved replies in this category');
+    $handled_saved_reply_select_text = __('Select saved reply');
+    $handled_saved_reply_empty_library_text = __('No saved replies yet. Add one below to start building your library.');
+    $handled_saved_reply_category_text = __('Category');
+    $handled_saved_reply_name_text = __('Saved reply name');
+    $handled_saved_reply_delete_text = __('Delete');
+    $handled_saved_reply_body_text = __('Reply body');
+    $handled_saved_reply_error_text = __('An error occurred');
 @endphp
 
 <style {!! \Helper::cspNonceAttr() !!}>
@@ -125,11 +134,11 @@
         {{ __('Create and edit replies here without leaving the ticket. Categories drive the first dropdown, and the selected reply inserts into the composer.') }}
         <div class="handled-saved-replies-placeholder-list">
             <span class="handled-saved-replies-placeholder">{%customer.firstName%}</span>
-            <span class="handled-saved-replies-placeholder">{{ '{{handled.business_name}}' }}</span>
-            <span class="handled-saved-replies-placeholder">{{ '{{handled.owner_name}}' }}</span>
-            <span class="handled-saved-replies-placeholder">{{ '{{handled.customer_name}}' }}</span>
-            <span class="handled-saved-replies-placeholder">{{ '{{handled.customer_email}}' }}</span>
-            <span class="handled-saved-replies-placeholder">{{ '{{handled.ticket_id}}' }}</span>
+            <span class="handled-saved-replies-placeholder">@{{handled.business_name}}</span>
+            <span class="handled-saved-replies-placeholder">@{{handled.owner_name}}</span>
+            <span class="handled-saved-replies-placeholder">@{{handled.customer_name}}</span>
+            <span class="handled-saved-replies-placeholder">@{{handled.customer_email}}</span>
+            <span class="handled-saved-replies-placeholder">@{{handled.ticket_id}}</span>
         </div>
     </div>
     <div class="handled-saved-replies-editor-list"></div>
@@ -205,7 +214,7 @@
                 return a.localeCompare(b);
             });
 
-            select.empty().append($('<option />').val('').text('{{ addslashes(__('All categories')) }}'));
+            select.empty().append($('<option />').val('').text(@json($handled_saved_reply_all_categories_text)));
 
             $.each(categories, function(_, category) {
                 select.append($('<option />').val(category).text(category));
@@ -228,13 +237,13 @@
             select.empty();
 
             if (!replies.length) {
-                select.append($('<option />').val('').text('{{ addslashes(__('No saved replies in this category')) }}'));
+                select.append($('<option />').val('').text(@json($handled_saved_reply_empty_category_text)));
                 select.prop('disabled', true);
                 insertButton.prop('disabled', true);
                 return;
             }
 
-            select.append($('<option />').val('').text('{{ addslashes(__('Select saved reply')) }}'));
+            select.append($('<option />').val('').text(@json($handled_saved_reply_select_text)));
 
             $.each(replies, function(_, reply) {
                 var label = reply.name;
@@ -269,7 +278,7 @@
             if (!window.handledSavedReplies.length) {
                 list.append(
                     '<div class="handled-saved-replies-empty">' +
-                        '<div class="handled-saved-replies-help">{{ addslashes(__('No saved replies yet. Add one below to start building your library.')) }}</div>' +
+                        '<div class="handled-saved-replies-help">' + @json($handled_saved_reply_empty_library_text) + '</div>' +
                     '</div>'
                 );
                 return;
@@ -279,11 +288,11 @@
                 list.append(
                     '<div class="handled-saved-reply-editor-item" data-index="' + index + '">' +
                         '<div class="handled-saved-reply-editor-grid">' +
-                            '<input type="text" class="form-control handled-saved-reply-category-input" placeholder="{{ addslashes(__('Category')) }}" maxlength="80" value="' + escapeHtml(reply.category || '') + '">' +
-                            '<input type="text" class="form-control handled-saved-reply-name-input" placeholder="{{ addslashes(__('Saved reply name')) }}" maxlength="80" value="' + escapeHtml(reply.name || '') + '">' +
-                            '<button type="button" class="btn btn-link text-danger handled-saved-reply-delete">{{ addslashes(__('Delete')) }}</button>' +
+                            '<input type="text" class="form-control handled-saved-reply-category-input" placeholder="' + @json($handled_saved_reply_category_text) + '" maxlength="80" value="' + escapeHtml(reply.category || '') + '">' +
+                            '<input type="text" class="form-control handled-saved-reply-name-input" placeholder="' + @json($handled_saved_reply_name_text) + '" maxlength="80" value="' + escapeHtml(reply.name || '') + '">' +
+                            '<button type="button" class="btn btn-link text-danger handled-saved-reply-delete">' + @json($handled_saved_reply_delete_text) + '</button>' +
                         '</div>' +
-                        '<textarea class="form-control handled-saved-reply-body-input" rows="6" placeholder="{{ addslashes(__('Reply body')) }}">' + escapeHtml(reply.body || '') + '</textarea>' +
+                        '<textarea class="form-control handled-saved-reply-body-input" rows="6" placeholder="' + @json($handled_saved_reply_body_text) + '">' + escapeHtml(reply.body || '') + '</textarea>' +
                     '</div>'
                 );
             });
@@ -378,7 +387,7 @@
                 }
             }, true, function() {
                 saveButton.prop('disabled', false);
-                showFloatingAlert('error', '{{ addslashes(__('An error occurred')) }}', true);
+                showFloatingAlert('error', @json($handled_saved_reply_error_text), true);
             });
         }
 
