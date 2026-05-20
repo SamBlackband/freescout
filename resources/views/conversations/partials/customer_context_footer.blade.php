@@ -72,15 +72,64 @@
         : [];
     $handled_generic_error_text = __('An error occurred');
     $handled_customer_email = !empty($conversation->customer_email) ? $conversation->customer_email : ($ordered_emails[0] ?? null);
+    $handled_conversation_id = !empty($conversation->id) ? (int) $conversation->id : null;
     $handled_responses_paused = !empty($handled_business['responses_paused']);
     $handled_support_writeback_visible = !empty($handled_business_id) || !empty($handled_activity_items);
     $handled_support_activity_visible = $handled_support_writeback_visible;
     $handled_support_actions_visible = !empty($handled_business_id) && !empty($conversation->id);
     $handled_support_action_js_enabled = $handled_support_actions_visible;
     $handled_support_action_enabled = $handled_support_actions_visible;
+    $handled_customer_profile_visible = $customer->company
+        || $customer->job_title
+        || $customer_location
+        || $customer->address
+        || $customer->zip
+        || $ordered_emails
+        || $phones
+        || $websites
+        || $social_profiles
+        || $customer->notes;
+    $handled_metrics_visible = $handled_business || $handled_support_summary || $handled_setup || $handled_business_metrics;
+    $handled_business_operational_visible = is_array($handled_business) && (
+        !empty($handled_business['plan_tier'])
+        || !empty($handled_business['brand_id'])
+        || !empty($handled_business['instagram_handle'])
+        || !empty($handled_business['booking_url'])
+        || !empty($handled_business['subscription_status'])
+        || array_key_exists('responses_paused', $handled_business)
+    );
+    $handled_owner_coverage_visible = is_array($handled_owner) && (
+        !empty($handled_owner['user_emails'])
+        || array_key_exists('verified_user_count', $handled_owner)
+        || !empty($handled_owner['last_login_at'])
+        || array_key_exists('days_since_last_login', $handled_owner)
+    );
+    $handled_operator_entity_visible = is_array($handled_business) && array_key_exists('is_operator', $handled_business);
+    $handled_account_health_visible = is_array($handled_account_health) && (
+        !empty($handled_account_health['holiday_return_date'])
+        || array_key_exists('holiday_mode_active', $handled_account_health)
+        || array_key_exists('onboarding_seen', $handled_account_health)
+        || !empty($handled_account_health['setup_started_at'])
+        || !empty($handled_account_health['setup_last_activity_at'])
+        || !empty($handled_account_health['setup_completed_at'])
+        || !empty($handled_account_health['low_confidence_behaviour'])
+    );
+    $handled_visibility_visible = $handled_setup || $handled_support_summary || $handled_business_metrics || $handled_matched_by;
+    $handled_footer_visible = $handled_business
+        || $handled_business_metrics
+        || $handled_owner
+        || $handled_account_health
+        || $handled_diagnostics
+        || $handled_history
+        || $handled_actions
+        || $handled_setup
+        || $handled_support_summary
+        || $handled_ticket
+        || $handled_activity
+        || $handled_customer_profile_visible;
 @endphp
 
-@if ($handled_business || $handled_business_metrics || $handled_owner || $handled_account_health || $handled_diagnostics || $handled_history || $handled_actions || $handled_setup || $handled_support_summary || $handled_ticket || $handled_activity || $customer->company || $customer->job_title || $customer_location || $websites || $social_profiles || $customer->notes)
+@if ($handled_footer_visible)
     <div class="handled-conversation-footer">
         <div class="handled-conversation-footer-grid">
             <section class="handled-conversation-footer-card handled-context-card handled-context-panel">
@@ -91,7 +140,7 @@
                     </div>
                 </div>
 
-                @if ($handled_business || $handled_support_summary || $handled_setup || $handled_business_metrics)
+                @if ($handled_metrics_visible)
                     <div class="handled-context-metrics">
                         @if ($handled_business)
                             <div class="handled-context-metric">
@@ -137,7 +186,7 @@
                 @endif
 
                 <div class="handled-context-detail-grid">
-                    @if ($customer->company || $customer->job_title || $customer_location || $customer->address || $customer->zip || $ordered_emails || $phones || $websites || $social_profiles || $customer->notes)
+                    @if ($handled_customer_profile_visible)
                         <section class="handled-context-subcard">
                             <div class="handled-eyebrow">{{ __('Customer profile') }}</div>
                             <h4>{{ __('Extended details') }}</h4>
@@ -185,7 +234,9 @@
                                         <a href="{{ $website }}" target="_blank">{{ parse_url($website, PHP_URL_HOST) ?: __('Website') }}</a>
                                     @endforeach
                                     @foreach ($social_profiles as $sp)
-                                        @php($formatted_social = App\Customer::formatSocialProfile($sp))
+                                        @php
+                                            $formatted_social = App\Customer::formatSocialProfile($sp);
+                                        @endphp
                                         <a href="{{ $formatted_social['value_url'] }}" target="_blank">{{ $formatted_social['type_name'] }}</a>
                                     @endforeach
                                 </div>
@@ -198,7 +249,7 @@
                         </section>
                     @endif
 
-                    @if ($handled_business && (!empty($handled_business['plan_tier']) || !empty($handled_business['brand_id']) || !empty($handled_business['instagram_handle']) || !empty($handled_business['booking_url']) || !empty($handled_business['subscription_status']) || array_key_exists('responses_paused', $handled_business)))
+                    @if ($handled_business_operational_visible)
                         <section class="handled-context-subcard">
                             <div class="handled-eyebrow">{{ __('Handled account') }}</div>
                             <h4>{{ __('Operational details') }}</h4>
@@ -241,7 +292,7 @@
                         </section>
                     @endif
 
-                    @if ($handled_owner && (!empty($handled_owner['user_emails']) || array_key_exists('verified_user_count', $handled_owner) || !empty($handled_owner['last_login_at']) || array_key_exists('days_since_last_login', $handled_owner)))
+                    @if ($handled_owner_coverage_visible)
                         <section class="handled-context-subcard">
                             <div class="handled-eyebrow">{{ __('Owner coverage') }}</div>
                             <h4>{{ __('Owner + operator signals') }}</h4>
@@ -268,7 +319,7 @@
                                         <dd>{{ $handled_owner['days_since_last_login'] }}</dd>
                                     </div>
                                 @endif
-                                @if (array_key_exists('is_operator', $handled_business))
+                                @if ($handled_operator_entity_visible)
                                     <div>
                                         <dt>{{ __('Operator entity') }}</dt>
                                         <dd>{{ !empty($handled_business['is_operator']) ? __('Yes') : __('No') }}</dd>
@@ -278,7 +329,7 @@
                         </section>
                     @endif
 
-                    @if ($handled_account_health && (!empty($handled_account_health['holiday_return_date']) || array_key_exists('holiday_mode_active', $handled_account_health) || array_key_exists('onboarding_seen', $handled_account_health) || !empty($handled_account_health['setup_started_at']) || !empty($handled_account_health['setup_last_activity_at']) || !empty($handled_account_health['setup_completed_at']) || !empty($handled_account_health['low_confidence_behaviour'])))
+                    @if ($handled_account_health_visible)
                         <section class="handled-context-subcard">
                             <div class="handled-eyebrow">{{ __('Account health') }}</div>
                             <h4>{{ __('Read-only operating state') }}</h4>
@@ -325,56 +376,52 @@
                         </section>
                     @endif
 
-                    @if ($handled_setup || $handled_support_summary || $handled_business_metrics || $handled_matched_by)
+                    @if ($handled_visibility_visible)
                         <section class="handled-context-subcard">
                             <div class="handled-eyebrow">{{ __('Visibility') }}</div>
                             <h4>{{ __('Support + setup state') }}</h4>
-                            @if ($handled_setup || $handled_support_summary || $handled_business_metrics || $handled_matched_by)
-                                <dl class="handled-context-grid">
-                                    @if ($handled_support_summary)
+                            <dl class="handled-context-grid">
+                                @if ($handled_support_summary)
+                                    <div>
+                                        <dt>{{ __('Active tickets') }}</dt>
+                                        <dd>{{ $handled_support_summary['active_tickets_total'] ?? 0 }}</dd>
+                                    </div>
+                                    <div>
+                                        <dt>{{ __('Ticket history') }}</dt>
+                                        <dd>{{ $handled_support_summary['tickets_total'] ?? 0 }}</dd>
+                                    </div>
+                                    @if (!empty($handled_support_summary['latest_activity_at']))
                                         <div>
-                                            <dt>{{ __('Active tickets') }}</dt>
-                                            <dd>{{ $handled_support_summary['active_tickets_total'] ?? 0 }}</dd>
-                                        </div>
-                                        <div>
-                                            <dt>{{ __('Ticket history') }}</dt>
-                                            <dd>{{ $handled_support_summary['tickets_total'] ?? 0 }}</dd>
-                                        </div>
-                                        @if (!empty($handled_support_summary['latest_activity_at']))
-                                            <div>
-                                                <dt>{{ __('Latest support activity') }}</dt>
-                                                <dd>{{ $handled_support_summary['latest_activity_at'] }}</dd>
-                                            </div>
-                                        @endif
-                                    @endif
-                                    @if ($handled_setup)
-                                        <div>
-                                            <dt>{{ __('Next gap') }}</dt>
-                                            <dd>{{ $handled_setup['first_incomplete'] ?? __('Complete') }}</dd>
+                                            <dt>{{ __('Latest support activity') }}</dt>
+                                            <dd>{{ $handled_support_summary['latest_activity_at'] }}</dd>
                                         </div>
                                     @endif
-                                    @if ($handled_business_metrics)
+                                @endif
+                                @if ($handled_setup)
+                                    <div>
+                                        <dt>{{ __('Next gap') }}</dt>
+                                        <dd>{{ $handled_setup['first_incomplete'] ?? __('Complete') }}</dd>
+                                    </div>
+                                @endif
+                                @if ($handled_business_metrics)
+                                    <div>
+                                        <dt>{{ __('Customer records') }}</dt>
+                                        <dd>{{ $handled_business_metrics['customer_profiles_total'] ?? 0 }}</dd>
+                                    </div>
+                                    @if (!empty($handled_business_metrics['latest_booking_at']))
                                         <div>
-                                            <dt>{{ __('Customer records') }}</dt>
-                                            <dd>{{ $handled_business_metrics['customer_profiles_total'] ?? 0 }}</dd>
-                                        </div>
-                                        @if (!empty($handled_business_metrics['latest_booking_at']))
-                                            <div>
-                                                <dt>{{ __('Latest booking') }}</dt>
-                                                <dd>{{ $handled_business_metrics['latest_booking_at'] }}</dd>
-                                            </div>
-                                        @endif
-                                    @endif
-                                    @if ($handled_matched_by)
-                                        <div>
-                                            <dt>{{ __('Context matched by') }}</dt>
-                                            <dd>{{ $handled_matched_by }}</dd>
+                                            <dt>{{ __('Latest booking') }}</dt>
+                                            <dd>{{ $handled_business_metrics['latest_booking_at'] }}</dd>
                                         </div>
                                     @endif
-                                </dl>
-                            @else
-                                <p class="handled-context-empty">{{ __('No setup or support visibility data is available yet.') }}</p>
-                            @endif
+                                @endif
+                                @if ($handled_matched_by)
+                                    <div>
+                                        <dt>{{ __('Context matched by') }}</dt>
+                                        <dd>{{ $handled_matched_by }}</dd>
+                                    </div>
+                                @endif
+                            </dl>
                         </section>
                     @endif
                 </div>
@@ -666,7 +713,7 @@
 
                         var data = {
                             action: button.data('action'),
-                            conversation_id: {{ (int) $conversation->id }},
+                            conversation_id: @json($handled_conversation_id),
                             business_id: button.data('business-id')
                         };
 

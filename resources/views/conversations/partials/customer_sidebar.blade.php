@@ -256,7 +256,7 @@
                         @foreach ($channels as $channel)
                             <span class="fs-tag"><span class="fs-tag-name">{{ $channel->getChannelName() }}</span></span>
                         @endforeach
-                        {{ '' }}@action('customer.tags', $customer, $conversation ?? null)
+                        @action('customer.tags', $customer, $conversation ?? null)
                     </div>
                 @endif
                 <ul class="handled-customer-contacts">

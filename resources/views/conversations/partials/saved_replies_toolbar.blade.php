@@ -157,6 +157,18 @@
         }
         window.handledSavedRepliesToolbarBound = true;
 
+        var handledSavedRepliesAllCategoriesText = @json($handled_saved_reply_all_categories_text);
+        var handledSavedRepliesEmptyCategoryText = @json($handled_saved_reply_empty_category_text);
+        var handledSavedRepliesSelectText = @json($handled_saved_reply_select_text);
+        var handledSavedRepliesEmptyLibraryText = @json($handled_saved_reply_empty_library_text);
+        var handledSavedRepliesCategoryText = @json($handled_saved_reply_category_text);
+        var handledSavedRepliesNameText = @json($handled_saved_reply_name_text);
+        var handledSavedRepliesDeleteText = @json($handled_saved_reply_delete_text);
+        var handledSavedRepliesBodyText = @json($handled_saved_reply_body_text);
+        var handledSavedRepliesErrorText = @json($handled_saved_reply_error_text);
+        var handledSavedRepliesMailboxId = @json($handled_saved_replies_mailbox_id);
+        var handledSavedRepliesConversationId = @json($handled_saved_replies_conversation_id);
+
         function getToolbar() {
             return $('.handled-saved-replies-toolbar:first');
         }
@@ -214,7 +226,7 @@
                 return a.localeCompare(b);
             });
 
-            select.empty().append($('<option />').val('').text(@json($handled_saved_reply_all_categories_text)));
+            select.empty().append($('<option />').val('').text(handledSavedRepliesAllCategoriesText));
 
             $.each(categories, function(_, category) {
                 select.append($('<option />').val(category).text(category));
@@ -237,13 +249,13 @@
             select.empty();
 
             if (!replies.length) {
-                select.append($('<option />').val('').text(@json($handled_saved_reply_empty_category_text)));
+                select.append($('<option />').val('').text(handledSavedRepliesEmptyCategoryText));
                 select.prop('disabled', true);
                 insertButton.prop('disabled', true);
                 return;
             }
 
-            select.append($('<option />').val('').text(@json($handled_saved_reply_select_text)));
+            select.append($('<option />').val('').text(handledSavedRepliesSelectText));
 
             $.each(replies, function(_, reply) {
                 var label = reply.name;
@@ -278,7 +290,7 @@
             if (!window.handledSavedReplies.length) {
                 list.append(
                     '<div class="handled-saved-replies-empty">' +
-                        '<div class="handled-saved-replies-help">' + @json($handled_saved_reply_empty_library_text) + '</div>' +
+                        '<div class="handled-saved-replies-help">' + handledSavedRepliesEmptyLibraryText + '</div>' +
                     '</div>'
                 );
                 return;
@@ -288,11 +300,11 @@
                 list.append(
                     '<div class="handled-saved-reply-editor-item" data-index="' + index + '">' +
                         '<div class="handled-saved-reply-editor-grid">' +
-                            '<input type="text" class="form-control handled-saved-reply-category-input" placeholder="' + @json($handled_saved_reply_category_text) + '" maxlength="80" value="' + escapeHtml(reply.category || '') + '">' +
-                            '<input type="text" class="form-control handled-saved-reply-name-input" placeholder="' + @json($handled_saved_reply_name_text) + '" maxlength="80" value="' + escapeHtml(reply.name || '') + '">' +
-                            '<button type="button" class="btn btn-link text-danger handled-saved-reply-delete">' + @json($handled_saved_reply_delete_text) + '</button>' +
+                            '<input type="text" class="form-control handled-saved-reply-category-input" placeholder="' + handledSavedRepliesCategoryText + '" maxlength="80" value="' + escapeHtml(reply.category || '') + '">' +
+                            '<input type="text" class="form-control handled-saved-reply-name-input" placeholder="' + handledSavedRepliesNameText + '" maxlength="80" value="' + escapeHtml(reply.name || '') + '">' +
+                            '<button type="button" class="btn btn-link text-danger handled-saved-reply-delete">' + handledSavedRepliesDeleteText + '</button>' +
                         '</div>' +
-                        '<textarea class="form-control handled-saved-reply-body-input" rows="6" placeholder="' + @json($handled_saved_reply_body_text) + '">' + escapeHtml(reply.body || '') + '</textarea>' +
+                        '<textarea class="form-control handled-saved-reply-body-input" rows="6" placeholder="' + handledSavedRepliesBodyText + '">' + escapeHtml(reply.body || '') + '</textarea>' +
                     '</div>'
                 );
             });
@@ -369,8 +381,8 @@
             var saveButton = getPanel().find('.handled-saved-replies-save');
             var data = {
                 action: 'handled_saved_replies_save',
-                mailbox_id: @json($handled_saved_replies_mailbox_id),
-                conversation_id: @json($handled_saved_replies_conversation_id),
+                mailbox_id: handledSavedRepliesMailboxId,
+                conversation_id: handledSavedRepliesConversationId,
                 saved_replies_json: JSON.stringify(collectEditorReplies())
             };
 
@@ -387,7 +399,7 @@
                 }
             }, true, function() {
                 saveButton.prop('disabled', false);
-                showFloatingAlert('error', @json($handled_saved_reply_error_text), true);
+                showFloatingAlert('error', handledSavedRepliesErrorText, true);
             });
         }
 
