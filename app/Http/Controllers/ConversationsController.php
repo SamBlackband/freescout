@@ -386,12 +386,18 @@ class ConversationsController extends Controller
         try {
             return \Response::make(view($template, $viewData)->render());
         } catch (\Exception $e) {
-            \Log::error('Conversation view render failed', $this->buildConversationRenderDiagnosticContext(
+            $diagnosticContext = $this->buildConversationRenderDiagnosticContext(
                 $conversation,
                 $template,
                 $customer,
                 $e
-            ));
+            );
+
+            \App\Option::set('handled_last_conversation_render_error', $diagnosticContext + [
+                'captured_at' => now()->toIso8601String(),
+            ]);
+
+            \Log::error('Conversation view render failed', $diagnosticContext);
 
             throw $e;
         }

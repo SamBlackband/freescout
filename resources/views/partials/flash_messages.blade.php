@@ -23,6 +23,37 @@
     </div>
 @endif
 
+@php
+    $handled_last_render_error = null;
+    if (Auth::user() && Auth::user()->isAdmin()) {
+        $handled_last_render_error = \App\Option::get('handled_last_conversation_render_error', []);
+        if (!is_array($handled_last_render_error) || empty($handled_last_render_error)) {
+            $handled_last_render_error = null;
+        }
+    }
+@endphp
+
+@if ($handled_last_render_error)
+    <div class="alert alert-danger">
+        <a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>
+        <strong>{{ __('Latest conversation render error') }}</strong><br>
+        {{ $handled_last_render_error['captured_at'] ?? __('Unknown time') }}
+        @if (!empty($handled_last_render_error['exception_message']))
+            — {{ $handled_last_render_error['exception_message'] }}
+        @endif
+        <br>
+        <small>
+            {{ __('Conversation') }}: {{ $handled_last_render_error['conversation_id'] ?? '—' }}
+            · {{ __('Template') }}: {{ $handled_last_render_error['template'] ?? '—' }}
+            · {{ __('File') }}: {{ $handled_last_render_error['exception_file'] ?? '—' }}:{{ $handled_last_render_error['exception_line'] ?? '—' }}
+        </small>
+        <details style="margin-top:8px;">
+            <summary>{{ __('Show render diagnostics') }}</summary>
+            <pre style="margin-top:8px; white-space:pre-wrap;">{{ json_encode($handled_last_render_error, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) }}</pre>
+        </details>
+    </div>
+@endif
+
 {{-- Floating flash messages are displayed in layout --}}
 @php
     $flashes = \Eventy::filter('flash_messages.flashes', $flashes ?? []);
