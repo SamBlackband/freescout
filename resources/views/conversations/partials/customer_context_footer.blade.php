@@ -70,6 +70,7 @@
             return is_array($handled_message);
         }))
         : [];
+    $handled_generic_error_text = __('An error occurred');
     $handled_customer_email = !empty($conversation->customer_email) ? $conversation->customer_email : ($ordered_emails[0] ?? null);
     $handled_responses_paused = !empty($handled_business['responses_paused']);
     $handled_support_writeback_visible = !empty($handled_business_id) || !empty($handled_activity_items);
@@ -695,7 +696,7 @@
                             }
                         }, true, function() {
                             button.prop('disabled', false);
-                            showFloatingAlert('error', '{{ addslashes(__('An error occurred')) }}', true);
+                            showFloatingAlert('error', @json($handled_generic_error_text), true);
                         });
                     });
             });
