@@ -360,7 +360,7 @@ class ConversationsController extends Controller
             }
         }
 
-        return view($template, [
+        $viewData = [
             'conversation'       => $conversation,
             'mailbox'            => $conversation->mailbox,
             'customer'           => $customer,
@@ -381,7 +381,20 @@ class ConversationsController extends Controller
             'is_following'       => $is_following,
             'from_aliases'       => $from_aliases,
             'from_alias'         => $from_alias,
-        ]);
+        ];
+
+        try {
+            return \Response::make(view($template, $viewData)->render());
+        } catch (\Exception $e) {
+            \Log::error('Conversation view render failed', $this->buildConversationRenderDiagnosticContext(
+                $conversation,
+                $template,
+                $customer,
+                $e
+            ));
+
+            throw $e;
+        }
     }
 
     /**
@@ -2954,6 +2967,53 @@ class ConversationsController extends Controller
         }
 
         return Mailbox::find($request->mailbox_id);
+    }
+
+    protected function buildConversationRenderDiagnosticContext(Conversation $conversation, $template, $customer = null, \Exception $exception = null)
+    {
+        $handledSupportContext = null;
+
+        try {
+            $handledSupportContext = app(HandledSupportContextService::class)->lookupForConversation($conversation);
+        } catch (\Exception $lookupException) {
+            $handledSupportContext = [
+                '_lookup_exception' => [
+                    'class' => get_class($lookupException),
+                    'message' => $lookupException->getMessage(),
+                ],
+            ];
+        }
+
+        $handledBusiness = is_array($handledSupportContext['business'] ?? null) ? $handledSupportContext['business'] : null;
+        $handledTicket = is_array($handledSupportContext['ticket'] ?? null) ? $handledSupportContext['ticket'] : null;
+        $handledActivity = is_array($handledSupportContext['activity'] ?? null) ? $handledSupportContext['activity'] : null;
+
+        return [
+            'conversation_id' => $conversation->id,
+            'conversation_number' => $conversation->number,
+            'conversation_status' => $conversation->status,
+            'conversation_state' => $conversation->state,
+            'conversation_subject' => $conversation->subject,
+            'conversation_customer_email' => $conversation->customer_email,
+            'customer_id' => $customer ? $customer->id : null,
+            'customer_name' => $customer ? $customer->getFullName(true, true) : null,
+            'mailbox_id' => $conversation->mailbox_id,
+            'template' => $template,
+            'thread_count' => $conversation->threads()->count(),
+            'handled_context_present' => is_array($handledSupportContext),
+            'handled_context_keys' => is_array($handledSupportContext) ? array_keys($handledSupportContext) : [],
+            'handled_business_present' => is_array($handledBusiness),
+            'handled_business_keys' => is_array($handledBusiness) ? array_keys($handledBusiness) : [],
+            'handled_ticket_present' => is_array($handledTicket),
+            'handled_ticket_keys' => is_array($handledTicket) ? array_keys($handledTicket) : [],
+            'handled_ticket_message_count' => is_array($handledTicket) && is_array($handledTicket['messages'] ?? null) ? count($handledTicket['messages']) : null,
+            'handled_activity_present' => is_array($handledActivity),
+            'handled_activity_item_count' => is_array($handledActivity) && is_array($handledActivity['items'] ?? null) ? count($handledActivity['items']) : null,
+            'exception_class' => $exception ? get_class($exception) : null,
+            'exception_message' => $exception ? $exception->getMessage() : null,
+            'exception_file' => $exception ? $exception->getFile() : null,
+            'exception_line' => $exception ? $exception->getLine() : null,
+        ];
     }
 
     protected function buildHandledSupportActionPayload(Request $request, User $user, array $extra = [])
