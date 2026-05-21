@@ -1,5 +1,27 @@
 @php
     $savedReplies = old('settings.handled_saved_replies', $settings['handled_saved_replies'] ?? []);
+    $savedRepliesReturnUrl = request()->query('handled_saved_replies_return');
+    $savedRepliesAction = request()->query('handled_saved_reply_action');
+    $savedRepliesCategoryPrefill = request()->query('handled_saved_reply_category');
+    $savedRepliesEditIndex = request()->query('handled_saved_reply_index');
+    if ($savedRepliesReturnUrl) {
+        $parsedReturnUrl = parse_url($savedRepliesReturnUrl);
+        $appHost = parse_url(url('/'), PHP_URL_HOST);
+        $appScheme = parse_url(url('/'), PHP_URL_SCHEME);
+
+        $isRelativeReturnUrl = !empty($parsedReturnUrl['path'])
+            && empty($parsedReturnUrl['scheme'])
+            && empty($parsedReturnUrl['host'])
+            && \Illuminate\Support\Str::startsWith($savedRepliesReturnUrl, '/');
+        $isSameOriginReturnUrl = !empty($parsedReturnUrl['host'])
+            && !empty($parsedReturnUrl['scheme'])
+            && $parsedReturnUrl['host'] === $appHost
+            && $parsedReturnUrl['scheme'] === $appScheme;
+
+        if (!$isRelativeReturnUrl && !$isSameOriginReturnUrl) {
+            $savedRepliesReturnUrl = null;
+        }
+    }
     if (!is_array($savedReplies) || !count($savedReplies)) {
         $savedReplies = [
             ['category' => '', 'name' => '', 'body' => ''],
@@ -14,6 +36,11 @@
         <label class="col-sm-2 control-label">{{ __('Saved Replies') }}</label>
 
         <div class="col-sm-8">
+            @if ($savedRepliesReturnUrl)
+                <p class="form-help margin-top-0">
+                    <a href="{{ $savedRepliesReturnUrl }}" class="btn btn-default btn-sm">{{ __('Back to conversation') }}</a>
+                </p>
+            @endif
             <p class="form-help margin-top-0">
                 {{ __('Add reusable reply snippets here. Agents can insert them from the reply composer without changing native send or draft behavior. Use slashes in the category field to create nested dropdown paths.') }}
             </p>
@@ -155,10 +182,32 @@
             var list = $('#handled-saved-replies-list');
             var template = $('#handled-saved-reply-template').html();
             var nextIndex = list.find('.handled-saved-reply-item').length;
+            var requestedAction = @json($savedRepliesAction);
+            var requestedCategory = @json($savedRepliesCategoryPrefill);
+            var requestedEditIndex = @json($savedRepliesEditIndex);
 
-            $('#handled-saved-reply-add').on('click', function() {
+            function focusReplyItem(item, focusSelector) {
+                if (!item || !item.length) {
+                    return;
+                }
+
+                $('.handled-saved-reply-item').removeClass('panel-info');
+                item.addClass('panel-info');
+                $('html, body').animate({
+                    scrollTop: Math.max(item.offset().top - 120, 0)
+                }, 0);
+                item.find(focusSelector || 'input:first').focus();
+            }
+
+            function addReplyItem() {
                 list.append(template.replace(/__INDEX__/g, nextIndex));
                 nextIndex++;
+
+                return list.find('.handled-saved-reply-item:last');
+            }
+
+            $('#handled-saved-reply-add').on('click', function() {
+                addReplyItem();
             });
 
             list.on('click', '.handled-saved-reply-remove', function() {
@@ -170,6 +219,22 @@
 
                 $(this).closest('.handled-saved-reply-item').remove();
             });
+
+            if (requestedAction === 'new') {
+                var newItem = addReplyItem();
+                if (requestedCategory) {
+                    newItem.find('input[name$="[category]"]').val(requestedCategory);
+                }
+                focusReplyItem(newItem, 'input[name$="[name]"]');
+            } else if (requestedEditIndex !== null && requestedEditIndex !== '') {
+                requestedEditIndex = parseInt(requestedEditIndex, 10);
+                if (!isNaN(requestedEditIndex) && requestedEditIndex >= 0) {
+                    var existingItem = list.find('.handled-saved-reply-item[data-index="' + requestedEditIndex + '"]');
+                    if (existingItem.length) {
+                        focusReplyItem(existingItem, 'input[name$="[name]"]');
+                    }
+                }
+            }
         });
     })();
 @endsection

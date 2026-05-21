@@ -1,30 +1,18 @@
 @php
     $handled_saved_replies = is_array($handled_saved_replies ?? null) ? array_values($handled_saved_replies) : [];
-    $handled_saved_replies_mailbox_id = $handled_saved_replies_mailbox_id ?? null;
-    $handled_saved_replies_conversation_id = $handled_saved_replies_conversation_id ?? null;
     $handled_saved_reply_trigger_text = __('Saved Replies');
     $handled_saved_reply_menu_title_text = __('Saved replies');
-    $handled_saved_reply_manage_text = __('Manage library');
-    $handled_saved_reply_new_text = __('New reply');
     $handled_saved_reply_back_text = __('Back');
     $handled_saved_reply_empty_menu_text = __('No saved replies yet.');
-    $handled_saved_reply_uncategorized_text = __('Saved replies');
-    $handled_saved_reply_library_title_text = __('Saved reply library');
-    $handled_saved_reply_library_empty_text = __('No saved replies yet. Create one to start building your library.');
-    $handled_saved_reply_modal_intro_text = __('Edit replies here without leaving the ticket. Use slashes in the category field to create nested menu paths.');
-    $handled_saved_reply_category_text = __('Category path');
-    $handled_saved_reply_category_placeholder_text = __('Billing / Refunds / Partial refund');
-    $handled_saved_reply_name_text = __('Saved reply name');
-    $handled_saved_reply_body_text = __('Reply body');
-    $handled_saved_reply_delete_text = __('Delete');
-    $handled_saved_reply_cancel_text = __('Close');
-    $handled_saved_reply_save_text = __('Save library');
+    $handled_saved_reply_root_replies_text = __('Replies');
+    $handled_saved_reply_manage_text = __('Manage library');
+    $handled_saved_reply_new_text = __('New reply');
+    $handled_saved_reply_open_settings_text = __('Open settings');
     $handled_saved_reply_edit_text = __('Edit');
-    $handled_saved_reply_new_modal_title_text = __('New saved reply');
-    $handled_saved_reply_edit_modal_title_text = __('Edit saved reply');
-    $handled_saved_reply_required_text = __('Saved replies need a name and body before they can be saved.');
-    $handled_saved_reply_delete_confirm_text = __('Delete this saved reply?');
-    $handled_saved_reply_error_text = __('An error occurred');
+    $handled_saved_reply_manage_hint_text = __('Manage saved replies in settings');
+    $handled_saved_reply_can_manage = Auth::user() && Auth::user()->isAdmin();
+    $handled_saved_replies_settings_url = route('settings', ['section' => 'saved_replies']);
+    $handled_saved_replies_return_url = \Request::fullUrl();
 @endphp
 
 <style {!! \Helper::cspNonceAttr() !!}>
@@ -110,7 +98,7 @@
     .handled-saved-replies-menu-link:hover,
     .handled-saved-replies-menu-back:hover,
     .handled-saved-replies-menu-edit:hover,
-    .handled-saved-replies-library-item:hover {
+    .handled-saved-replies-menu-settings:hover {
         background: #f8fafc;
         text-decoration: none;
     }
@@ -121,7 +109,8 @@
         color: #6b7280;
     }
 
-    .handled-saved-replies-menu-empty {
+    .handled-saved-replies-menu-empty,
+    .handled-saved-replies-menu-help {
         padding: 14px;
         color: #6b7280;
         font-size: 12px;
@@ -135,103 +124,20 @@
         background: #f8fafc;
     }
 
-    .handled-saved-replies-menu-footer .btn {
+    .handled-saved-replies-menu-footer .btn,
+    .handled-saved-replies-menu-footer .handled-saved-replies-menu-settings {
         flex: 1 1 0;
     }
 
-    .handled-saved-replies-modal-intro {
-        margin-bottom: 12px;
-        color: #607d9f;
-        font-size: 12px;
-        line-height: 1.5;
-    }
-
-    .handled-saved-replies-placeholder-list {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 6px;
-        margin-top: 8px;
-    }
-
-    .handled-saved-replies-placeholder {
-        display: inline-block;
-        padding: 2px 8px;
-        border: 1px solid #d8dfe6;
-        background: #fff;
-        color: #425466;
-        font-family: monospace;
-        font-size: 11px;
-    }
-
-    .handled-saved-replies-library-wrap {
-        border-right: 1px solid #eef2f7;
-        max-height: 420px;
-        overflow-y: auto;
-    }
-
-    .handled-saved-replies-library-header {
-        display: flex;
+    .handled-saved-replies-menu-settings {
+        display: inline-flex;
         align-items: center;
-        justify-content: space-between;
-        gap: 8px;
-        margin-bottom: 8px;
-    }
-
-    .handled-saved-replies-library-item {
-        display: block;
-        width: 100%;
-        padding: 10px 12px;
-        border: 1px solid #e5e7eb;
-        border-radius: 4px;
-        margin-bottom: 8px;
-        background: #fff;
-        color: #111827;
-        text-align: left;
-    }
-
-    .handled-saved-replies-library-item.is-active {
-        border-color: #93c5fd;
-        background: #eff6ff;
-    }
-
-    .handled-saved-replies-library-item strong,
-    .handled-saved-replies-library-item span {
-        display: block;
-    }
-
-    .handled-saved-replies-library-item span {
-        margin-top: 4px;
-        color: #6b7280;
-        font-size: 12px;
-    }
-
-    .handled-saved-replies-library-empty {
-        color: #6b7280;
-        font-size: 12px;
-        padding: 10px 0;
-    }
-
-    .handled-saved-replies-editor textarea {
-        min-height: 220px;
-        resize: vertical;
-    }
-
-    .handled-saved-replies-modal-delete {
-        margin-right: auto;
+        justify-content: center;
     }
 
     @media (max-width: 991px) {
         .handled-saved-replies-menu {
             width: 320px;
-        }
-
-        .handled-saved-replies-library-wrap {
-            border-right: 0;
-            border-bottom: 1px solid #eef2f7;
-            margin-bottom: 16px;
-            max-height: none;
-            overflow: visible;
-            padding-bottom: 12px;
         }
     }
 </style>
@@ -246,77 +152,14 @@
             <span class="handled-saved-replies-menu-breadcrumb"></span>
         </div>
         <div class="handled-saved-replies-menu-list"></div>
-        <div class="handled-saved-replies-menu-footer">
-            <button type="button" class="btn btn-default btn-sm handled-saved-replies-manage">{{ $handled_saved_reply_manage_text }}</button>
-            <button type="button" class="btn btn-primary btn-sm handled-saved-replies-new">{{ $handled_saved_reply_new_text }}</button>
-        </div>
-    </div>
-</div>
-
-<div class="modal fade" tabindex="-1" role="dialog" id="handled-saved-replies-modal">
-    <div class="modal-dialog modal-lg" role="document">
-        <div class="modal-content">
-            <div class="modal-header">
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-                <h4 class="modal-title">{{ $handled_saved_reply_library_title_text }}</h4>
+        @if ($handled_saved_reply_can_manage)
+            <div class="handled-saved-replies-menu-footer">
+                <button type="button" class="btn btn-default btn-sm handled-saved-replies-manage">{{ $handled_saved_reply_manage_text }}</button>
+                <button type="button" class="btn btn-primary btn-sm handled-saved-replies-new">{{ $handled_saved_reply_new_text }}</button>
             </div>
-            <div class="modal-body">
-                <div class="handled-saved-replies-modal-intro">
-                    {{ $handled_saved_reply_modal_intro_text }}
-                    <div class="handled-saved-replies-placeholder-list">
-                        <span class="handled-saved-replies-placeholder">{%customer.firstName%}</span>
-                        <span class="handled-saved-replies-placeholder">@{{handled.business_name}}</span>
-                        <span class="handled-saved-replies-placeholder">@{{handled.owner_name}}</span>
-                        <span class="handled-saved-replies-placeholder">@{{handled.customer_name}}</span>
-                        <span class="handled-saved-replies-placeholder">@{{handled.customer_email}}</span>
-                        <span class="handled-saved-replies-placeholder">@{{handled.ticket_id}}</span>
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="col-sm-4 handled-saved-replies-library-wrap">
-                        <div class="handled-saved-replies-library-header">
-                            <strong>{{ $handled_saved_reply_library_title_text }}</strong>
-                            <button type="button" class="btn btn-link handled-saved-replies-library-new">{{ $handled_saved_reply_new_text }}</button>
-                        </div>
-                        <div class="handled-saved-replies-library-list"></div>
-                    </div>
-                    <div class="col-sm-8 handled-saved-replies-editor">
-                        <div class="form-group">
-                            <label for="handled_saved_replies_modal_category">{{ $handled_saved_reply_category_text }}</label>
-                            <input
-                                id="handled_saved_replies_modal_category"
-                                type="text"
-                                class="form-control handled-saved-replies-modal-category"
-                                maxlength="160"
-                                placeholder="{{ $handled_saved_reply_category_placeholder_text }}"
-                            >
-                        </div>
-                        <div class="form-group">
-                            <label for="handled_saved_replies_modal_name">{{ $handled_saved_reply_name_text }}</label>
-                            <input
-                                id="handled_saved_replies_modal_name"
-                                type="text"
-                                class="form-control handled-saved-replies-modal-name"
-                                maxlength="80"
-                            >
-                        </div>
-                        <div class="form-group">
-                            <label for="handled_saved_replies_modal_body">{{ $handled_saved_reply_body_text }}</label>
-                            <textarea
-                                id="handled_saved_replies_modal_body"
-                                class="form-control handled-saved-replies-modal-body"
-                                rows="10"
-                            ></textarea>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-link text-danger handled-saved-replies-modal-delete">{{ $handled_saved_reply_delete_text }}</button>
-                <button type="button" class="btn btn-link" data-dismiss="modal">{{ $handled_saved_reply_cancel_text }}</button>
-                <button type="button" class="btn btn-primary handled-saved-replies-modal-save">{{ $handled_saved_reply_save_text }}</button>
-            </div>
-        </div>
+        @else
+            <div class="handled-saved-replies-menu-help">{{ $handled_saved_reply_manage_hint_text }}</div>
+        @endif
     </div>
 </div>
 
@@ -330,24 +173,14 @@
         window.handledSavedRepliesToolbarBound = true;
 
         var handledSavedRepliesMenuTitleText = @json($handled_saved_reply_menu_title_text);
-        var handledSavedRepliesManageText = @json($handled_saved_reply_manage_text);
-        var handledSavedRepliesNewText = @json($handled_saved_reply_new_text);
         var handledSavedRepliesBackText = @json($handled_saved_reply_back_text);
         var handledSavedRepliesEmptyMenuText = @json($handled_saved_reply_empty_menu_text);
-        var handledSavedRepliesUncategorizedText = @json($handled_saved_reply_uncategorized_text);
-        var handledSavedRepliesLibraryTitleText = @json($handled_saved_reply_library_title_text);
-        var handledSavedRepliesLibraryEmptyText = @json($handled_saved_reply_library_empty_text);
-        var handledSavedRepliesNewModalTitleText = @json($handled_saved_reply_new_modal_title_text);
-        var handledSavedRepliesEditModalTitleText = @json($handled_saved_reply_edit_modal_title_text);
-        var handledSavedRepliesEditText = @json($handled_saved_reply_edit_text);
-        var handledSavedRepliesDeleteText = @json($handled_saved_reply_delete_text);
-        var handledSavedRepliesRequiredText = @json($handled_saved_reply_required_text);
-        var handledSavedRepliesDeleteConfirmText = @json($handled_saved_reply_delete_confirm_text);
-        var handledSavedRepliesErrorText = @json($handled_saved_reply_error_text);
-        var handledSavedRepliesMailboxId = @json($handled_saved_replies_mailbox_id);
-        var handledSavedRepliesConversationId = @json($handled_saved_replies_conversation_id);
+        var handledSavedRepliesRootRepliesText = @json($handled_saved_reply_root_replies_text);
+        var handledSavedRepliesOpenSettingsText = @json($handled_saved_reply_open_settings_text);
+        var handledSavedRepliesSettingsUrl = @json($handled_saved_replies_settings_url);
+        var handledSavedRepliesReturnUrl = @json($handled_saved_replies_return_url);
+        var handledSavedRepliesCanManage = @json($handled_saved_reply_can_manage);
         var currentPath = [];
-        var currentEditIndex = null;
 
         function getDropdown() {
             return $('.handled-saved-replies-dropdown:first');
@@ -365,45 +198,18 @@
             return getMenu().find('.handled-saved-replies-menu-breadcrumb');
         }
 
-        function getTrigger() {
-            return getDropdown().find('.handled-saved-replies-trigger');
+        function buildSettingsUrl(extraParams) {
+            var params = $.extend({}, extraParams || {});
+
+            if (handledSavedRepliesReturnUrl) {
+                params.handled_saved_replies_return = handledSavedRepliesReturnUrl;
+            }
+
+            return handledSavedRepliesSettingsUrl + '?' + $.param(params);
         }
 
-        function getModal() {
-            return $('#handled-saved-replies-modal');
-        }
-
-        function getModalTitle() {
-            return getModal().find('.modal-title');
-        }
-
-        function getLibraryList() {
-            return getModal().find('.handled-saved-replies-library-list');
-        }
-
-        function getModalCategory() {
-            return getModal().find('.handled-saved-replies-modal-category');
-        }
-
-        function getModalName() {
-            return getModal().find('.handled-saved-replies-modal-name');
-        }
-
-        function getModalBody() {
-            return getModal().find('.handled-saved-replies-modal-body');
-        }
-
-        function getDeleteButton() {
-            return getModal().find('.handled-saved-replies-modal-delete');
-        }
-
-        function closeDropdown() {
-            getDropdown().removeClass('open');
-            getTrigger().attr('aria-expanded', 'false');
-        }
-
-        function escapeHtml(value) {
-            return $('<div/>').text(value || '').html();
+        function redirectToSettings(extraParams) {
+            window.location.href = buildSettingsUrl(extraParams);
         }
 
         function normalizeCategoryPath(value) {
@@ -421,16 +227,6 @@
             }
 
             return normalized.split(' / ');
-        }
-
-        function formatReplyLabel(reply) {
-            var category = normalizeCategoryPath(reply.category);
-
-            if (!category) {
-                return reply.name || '';
-            }
-
-            return category + ' / ' + (reply.name || '');
         }
 
         function buildReplyTree() {
@@ -456,8 +252,7 @@
                 });
 
                 node.replies.push($.extend({
-                    _index: index,
-                    _segments: segments
+                    _index: index
                 }, reply));
             });
 
@@ -489,9 +284,7 @@
 
         function appendBackRow(container) {
             var row = $('<div />').addClass('handled-saved-replies-menu-row');
-            var button = $('<button />', {
-                type: 'button'
-            })
+            var button = $('<button />', { type: 'button' })
                 .addClass('handled-saved-replies-menu-back')
                 .attr('data-menu-action', 'back')
                 .append(
@@ -506,9 +299,7 @@
 
         function appendCategoryRow(container, name) {
             var row = $('<div />').addClass('handled-saved-replies-menu-row');
-            var button = $('<button />', {
-                type: 'button'
-            })
+            var button = $('<button />', { type: 'button' })
                 .addClass('handled-saved-replies-menu-link')
                 .attr('data-menu-action', 'open-category')
                 .data('category-segment', name)
@@ -521,24 +312,28 @@
 
         function appendReplyRow(container, reply) {
             var row = $('<div />').addClass('handled-saved-replies-menu-row');
-            var insertButton = $('<button />', {
-                type: 'button'
-            })
+            var insertButton = $('<button />', { type: 'button' })
                 .addClass('handled-saved-replies-menu-link')
                 .attr('data-menu-action', 'insert-reply')
                 .attr('data-reply-index', reply._index)
                 .append($('<span />').text(reply.name || ''))
                 .append($('<span />').addClass('text-muted').html('&nbsp;'));
-            var editButton = $('<button />', {
-                type: 'button',
-                title: handledSavedRepliesEditText
-            })
-                .addClass('handled-saved-replies-menu-edit')
-                .attr('data-menu-action', 'edit-reply')
-                .attr('data-reply-index', reply._index)
-                .append($('<i />').addClass('glyphicon glyphicon-eye-open'));
 
-            row.append(insertButton).append(editButton);
+            row.append(insertButton);
+
+            if (handledSavedRepliesCanManage) {
+                row.append(
+                    $('<button />', {
+                        type: 'button',
+                        title: handledSavedRepliesOpenSettingsText
+                    })
+                        .addClass('handled-saved-replies-menu-edit')
+                        .attr('data-menu-action', 'edit-reply')
+                        .attr('data-reply-index', reply._index)
+                        .append($('<i />').addClass('glyphicon glyphicon-eye-open'))
+                );
+            }
+
             container.append(row);
         }
 
@@ -584,173 +379,11 @@
             }
 
             if (replies.length) {
-                appendSectionTitle(list, currentPath.length ? handledSavedRepliesUncategorizedText : handledSavedRepliesUncategorizedText);
+                appendSectionTitle(list, handledSavedRepliesRootRepliesText);
                 $.each(replies, function(_, reply) {
                     appendReplyRow(list, reply);
                 });
             }
-        }
-
-        function renderLibraryList() {
-            var list = getLibraryList();
-            var replies = (window.handledSavedReplies || []).slice().map(function(reply, index) {
-                return $.extend({ _index: index }, reply);
-            }).sort(function(a, b) {
-                return formatReplyLabel(a).localeCompare(formatReplyLabel(b));
-            });
-
-            list.empty();
-
-            if (!replies.length) {
-                list.append(
-                    $('<div />')
-                        .addClass('handled-saved-replies-library-empty')
-                        .text(handledSavedRepliesLibraryEmptyText)
-                );
-                return;
-            }
-
-            $.each(replies, function(_, reply) {
-                var button = $('<button />', {
-                    type: 'button'
-                })
-                    .addClass('handled-saved-replies-library-item')
-                    .toggleClass('is-active', currentEditIndex === reply._index)
-                    .attr('data-library-index', reply._index)
-                    .append($('<strong />').text(reply.name || ''))
-                    .append($('<span />').text(normalizeCategoryPath(reply.category) || handledSavedRepliesUncategorizedText));
-
-                list.append(button);
-            });
-        }
-
-        function fillModalForm(reply) {
-            getModalCategory().val(reply ? normalizeCategoryPath(reply.category) : '');
-            getModalName().val(reply ? (reply.name || '') : '');
-            getModalBody().val(reply ? (reply.body || '') : '');
-            getDeleteButton().toggle(!!reply);
-            getModalTitle().text(reply ? handledSavedRepliesEditModalTitleText : handledSavedRepliesNewModalTitleText);
-        }
-
-        function openModalForEdit(index) {
-            var reply = window.handledSavedReplies[index];
-
-            if (!reply) {
-                return;
-            }
-
-            currentEditIndex = index;
-            renderLibraryList();
-            fillModalForm(reply);
-            closeDropdown();
-            getModal().modal('show');
-        }
-
-        function openModalForNew(prefillCategory) {
-            currentEditIndex = null;
-            renderLibraryList();
-            fillModalForm(null);
-            getModalCategory().val(normalizeCategoryPath(prefillCategory || currentPath.join(' / ')));
-            closeDropdown();
-            getModal().modal('show');
-            window.setTimeout(function() {
-                getModalName().focus();
-            }, 150);
-        }
-
-        function openLibraryModal() {
-            if (window.handledSavedReplies.length) {
-                openModalForEdit(currentEditIndex !== null && window.handledSavedReplies[currentEditIndex] ? currentEditIndex : 0);
-                return;
-            }
-
-            openModalForNew('');
-        }
-
-        function persistReplies(callback) {
-            var saveButton = getModal().find('.handled-saved-replies-modal-save');
-            var data = {
-                action: 'handled_saved_replies_save',
-                mailbox_id: handledSavedRepliesMailboxId,
-                conversation_id: handledSavedRepliesConversationId,
-                saved_replies_json: JSON.stringify(window.handledSavedReplies || [])
-            };
-
-            saveButton.prop('disabled', true);
-
-            fsAjax(data, laroute.route('conversations.ajax'), function(response) {
-                saveButton.prop('disabled', false);
-
-                if (isAjaxSuccess(response)) {
-                    window.handledSavedReplies = $.isArray(response.saved_replies) ? response.saved_replies : [];
-                    renderMenu();
-                    renderLibraryList();
-                    if ($.isFunction(callback)) {
-                        callback();
-                    }
-                    showFloatingAlert('success', response.msg, true);
-                } else {
-                    showAjaxError(response, true);
-                }
-            }, true, function() {
-                saveButton.prop('disabled', false);
-                showFloatingAlert('error', handledSavedRepliesErrorText, true);
-            });
-        }
-
-        function saveModalReply() {
-            var category = normalizeCategoryPath(getModalCategory().val());
-            var name = $.trim(getModalName().val());
-            var body = $.trim(getModalBody().val());
-            var targetIndex = currentEditIndex;
-
-            if (!name || !body) {
-                showFloatingAlert('error', handledSavedRepliesRequiredText, true);
-                return;
-            }
-
-            if (targetIndex !== null && window.handledSavedReplies[targetIndex]) {
-                window.handledSavedReplies[targetIndex] = {
-                    category: category,
-                    name: name,
-                    body: body
-                };
-            } else {
-                window.handledSavedReplies.push({
-                    category: category,
-                    name: name,
-                    body: body
-                });
-                targetIndex = window.handledSavedReplies.length - 1;
-            }
-
-            currentEditIndex = targetIndex;
-            persistReplies(function() {
-                fillModalForm(window.handledSavedReplies[currentEditIndex] || null);
-                renderLibraryList();
-            });
-        }
-
-        function deleteCurrentReply() {
-            if (currentEditIndex === null || !window.handledSavedReplies[currentEditIndex]) {
-                return;
-            }
-
-            if (!window.confirm(handledSavedRepliesDeleteConfirmText)) {
-                return;
-            }
-
-            window.handledSavedReplies.splice(currentEditIndex, 1);
-            if (window.handledSavedReplies.length) {
-                currentEditIndex = Math.min(currentEditIndex, window.handledSavedReplies.length - 1);
-            } else {
-                currentEditIndex = null;
-            }
-
-            persistReplies(function() {
-                renderLibraryList();
-                fillModalForm(currentEditIndex !== null ? window.handledSavedReplies[currentEditIndex] : null);
-            });
         }
 
         function insertReply(index) {
@@ -766,7 +399,7 @@
                 return;
             }
 
-            closeDropdown();
+            getDropdown().removeClass('open');
             $('#body').summernote('focus');
             $('#body').summernote('pasteHTML', body);
             onReplyChange();
@@ -793,27 +426,18 @@
                 insertReply(parseInt($(this).data('reply-index'), 10));
             })
             .on('click', '.handled-saved-replies-menu-edit[data-menu-action="edit-reply"]', function() {
-                openModalForEdit(parseInt($(this).data('reply-index'), 10));
+                redirectToSettings({
+                    handled_saved_reply_index: parseInt($(this).data('reply-index'), 10)
+                });
             })
             .on('click', '.handled-saved-replies-manage', function() {
-                openLibraryModal();
+                redirectToSettings();
             })
             .on('click', '.handled-saved-replies-new', function() {
-                openModalForNew(currentPath.join(' / '));
-            })
-            .on('click', '.handled-saved-replies-library-new', function() {
-                openModalForNew(currentPath.join(' / '));
-            })
-            .on('click', '.handled-saved-replies-library-item', function() {
-                openModalForEdit(parseInt($(this).data('library-index'), 10));
-            })
-            .on('click', '.handled-saved-replies-modal-save', function(event) {
-                event.preventDefault();
-                saveModalReply();
-            })
-            .on('click', '.handled-saved-replies-modal-delete', function(event) {
-                event.preventDefault();
-                deleteCurrentReply();
+                redirectToSettings({
+                    handled_saved_reply_action: 'new',
+                    handled_saved_reply_category: currentPath.join(' / ')
+                });
             });
 
         renderMenu();
