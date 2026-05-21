@@ -15,7 +15,7 @@
 
         <div class="col-sm-8">
             <p class="form-help margin-top-0">
-                {{ __('Add reusable reply snippets here. Agents can insert them from the reply composer without changing native send or draft behavior.') }}
+                {{ __('Add reusable reply snippets here. Agents can insert them from the reply composer without changing native send or draft behavior. Use slashes in the category field to create nested dropdown paths.') }}
             </p>
         </div>
     </div>
@@ -35,7 +35,7 @@
                                 name="settings[handled_saved_replies][{{ $index }}][category]"
                                 value="{{ $savedReply['category'] ?? '' }}"
                                 maxlength="80"
-                                placeholder="{{ __('Billing / Onboarding / Follow-up') }}"
+                                placeholder="{{ __('Billing / Refunds / Partial refund') }}"
                             >
                             @include('partials/field_error', ['field' => 'settings.handled_saved_replies.'.$index.'.category'])
                         </div>
@@ -70,7 +70,7 @@
                                 rows="6"
                             >{{ $savedReply['body'] ?? '' }}</textarea>
                             <p class="form-help">
-                                {{ __('HTML is allowed and standard FreeScout placeholders such as {%customer.firstName%} can be used.') }}
+                                {{ __('HTML is allowed and standard FreeScout placeholders such as {%customer.firstName%} can be used. Category paths with slashes become nested dropdown levels in the composer.') }}
                             </p>
                             @include('partials/field_error', ['field' => 'settings.handled_saved_replies.'.$index.'.body'])
                         </div>
@@ -108,7 +108,7 @@
                         class="form-control"
                         name="settings[handled_saved_replies][__INDEX__][category]"
                         maxlength="80"
-                        placeholder="{{ __('Billing / Onboarding / Follow-up') }}"
+                        placeholder="{{ __('Billing / Refunds / Partial refund') }}"
                     >
                 </div>
 
@@ -140,7 +140,7 @@
                         rows="6"
                     ></textarea>
                     <p class="form-help">
-                        {{ __('HTML is allowed and standard FreeScout placeholders such as {%customer.firstName%} can be used.') }}
+                        {{ __('HTML is allowed and standard FreeScout placeholders such as {%customer.firstName%} can be used. Category paths with slashes become nested dropdown levels in the composer.') }}
                     </p>
                 </div>
             </div>
