@@ -164,13 +164,14 @@
 </div>
 
 <script>
-    window.handledSavedReplies = @json($handled_saved_replies);
+    window.handledSavedReplies = @json($handled_saved_replies ?? []);
 
     (function() {
-        if (window.handledSavedRepliesToolbarBound) {
+        var dropdown = $('.handled-saved-replies-dropdown:first');
+
+        if (!dropdown.length) {
             return;
         }
-        window.handledSavedRepliesToolbarBound = true;
 
         var handledSavedRepliesMenuTitleText = @json($handled_saved_reply_menu_title_text);
         var handledSavedRepliesBackText = @json($handled_saved_reply_back_text);
@@ -406,34 +407,46 @@
         }
 
         $(document)
-            .on('show.bs.dropdown', '.handled-saved-replies-dropdown', function() {
+            .off('show.bs.dropdown.handledSavedReplies', '.handled-saved-replies-dropdown')
+            .off('click.handledSavedReplies', '.handled-saved-replies-menu [data-menu-action]')
+            .off('click.handledSavedReplies', '.handled-saved-replies-menu-back')
+            .off('click.handledSavedReplies', '.handled-saved-replies-menu-link[data-menu-action="open-category"]')
+            .off('click.handledSavedReplies', '.handled-saved-replies-menu-link[data-menu-action="insert-reply"]')
+            .off('click.handledSavedReplies', '.handled-saved-replies-menu-edit[data-menu-action="edit-reply"]')
+            .off('click.handledSavedReplies', '.handled-saved-replies-manage')
+            .off('click.handledSavedReplies', '.handled-saved-replies-new')
+            .on('show.bs.dropdown.handledSavedReplies', '.handled-saved-replies-dropdown', function() {
                 currentPath = [];
                 renderMenu();
             })
-            .on('click', '.handled-saved-replies-menu [data-menu-action], .handled-saved-replies-manage, .handled-saved-replies-new', function(event) {
+            .on('click.handledSavedReplies', '.handled-saved-replies-menu [data-menu-action]', function(event) {
                 event.preventDefault();
                 event.stopPropagation();
             })
-            .on('click', '.handled-saved-replies-menu-back', function() {
+            .on('click.handledSavedReplies', '.handled-saved-replies-menu-back', function() {
                 currentPath = currentPath.slice(0, -1);
                 renderMenu();
             })
-            .on('click', '.handled-saved-replies-menu-link[data-menu-action="open-category"]', function() {
+            .on('click.handledSavedReplies', '.handled-saved-replies-menu-link[data-menu-action="open-category"]', function() {
                 currentPath.push($(this).data('category-segment'));
                 renderMenu();
             })
-            .on('click', '.handled-saved-replies-menu-link[data-menu-action="insert-reply"]', function() {
+            .on('click.handledSavedReplies', '.handled-saved-replies-menu-link[data-menu-action="insert-reply"]', function() {
                 insertReply(parseInt($(this).data('reply-index'), 10));
             })
-            .on('click', '.handled-saved-replies-menu-edit[data-menu-action="edit-reply"]', function() {
+            .on('click.handledSavedReplies', '.handled-saved-replies-menu-edit[data-menu-action="edit-reply"]', function() {
                 redirectToSettings({
                     handled_saved_reply_index: parseInt($(this).data('reply-index'), 10)
                 });
             })
-            .on('click', '.handled-saved-replies-manage', function() {
+            .on('click.handledSavedReplies', '.handled-saved-replies-manage', function(event) {
+                event.preventDefault();
+                event.stopPropagation();
                 redirectToSettings();
             })
-            .on('click', '.handled-saved-replies-new', function() {
+            .on('click.handledSavedReplies', '.handled-saved-replies-new', function(event) {
+                event.preventDefault();
+                event.stopPropagation();
                 redirectToSettings({
                     handled_saved_reply_action: 'new',
                     handled_saved_reply_category: currentPath.join(' / ')
