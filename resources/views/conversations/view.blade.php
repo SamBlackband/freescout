@@ -510,4 +510,6 @@
     @parent
     initReplyForm();
     initConversation();
+    initHandledSavedRepliesToolbar();
+    initHandledSupportActions();
 @endsection

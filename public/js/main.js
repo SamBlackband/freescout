@@ -1866,6 +1866,432 @@ function ajaxSetup()
 	});
 }
 
+function getHandledSavedRepliesDropdown()
+{
+	var dropdown = $('.note-statusbar .handled-saved-replies-dropdown:first');
+
+	if (!dropdown.length) {
+		dropdown = $('#editor_bottom_toolbar .handled-saved-replies-dropdown:first');
+	}
+
+	return dropdown;
+}
+
+function parseHandledJsonScript(container, selector)
+{
+	if (!container || !container.length) {
+		return null;
+	}
+
+	var script = container.find(selector + ':first');
+	var value = null;
+
+	if (!script.length) {
+		return null;
+	}
+
+	try {
+		value = JSON.parse($.trim(script.text()) || 'null');
+	} catch (error) {
+		value = null;
+	}
+
+	return value;
+}
+
+function initHandledSavedRepliesToolbar()
+{
+	if (!getHandledSavedRepliesDropdown().length) {
+		return;
+	}
+
+	var currentPath = [];
+
+	function getDropdown() {
+		return getHandledSavedRepliesDropdown();
+	}
+
+	function getMenu() {
+		return getDropdown().find('.handled-saved-replies-menu:first');
+	}
+
+	function getMenuList() {
+		return getMenu().find('.handled-saved-replies-menu-list:first');
+	}
+
+	function getBreadcrumb() {
+		return getMenu().find('.handled-saved-replies-menu-breadcrumb:first');
+	}
+
+	function getReplies() {
+		var replies = parseHandledJsonScript(getDropdown(), '.handled-saved-replies-data');
+
+		return Array.isArray(replies) ? replies : [];
+	}
+
+	function getConfig() {
+		var dropdown = getDropdown();
+
+		return {
+			settingsUrl: dropdown.attr('data-settings-url') || '',
+			returnUrl: dropdown.attr('data-return-url') || '',
+			canManage: !!parseInt(dropdown.attr('data-can-manage') || '0', 10),
+			menuTitleText: dropdown.attr('data-menu-title') || '',
+			backText: dropdown.attr('data-back-text') || 'Back',
+			emptyText: dropdown.attr('data-empty-text') || '',
+			rootRepliesText: dropdown.attr('data-root-replies-text') || '',
+			openSettingsText: dropdown.attr('data-open-settings-text') || ''
+		};
+	}
+
+	function buildSettingsUrl(extraParams) {
+		var config = getConfig();
+		var params = $.extend({}, extraParams || {});
+		var query = '';
+		var separator = '?';
+
+		if (!config.settingsUrl) {
+			return '';
+		}
+
+		if (config.returnUrl) {
+			params.handled_saved_replies_return = config.returnUrl;
+		}
+
+		query = $.param(params);
+		if (!query) {
+			return config.settingsUrl;
+		}
+
+		if (config.settingsUrl.indexOf('?') !== -1) {
+			separator = '&';
+		}
+
+		return config.settingsUrl + separator + query;
+	}
+
+	function redirectToSettings(extraParams) {
+		var url = buildSettingsUrl(extraParams);
+
+		if (!url) {
+			return;
+		}
+
+		window.location.href = url;
+	}
+
+	function normalizeCategoryPath(value) {
+		return $.map(String(value || '').split('/'), function(segment) {
+			segment = $.trim(segment);
+			return segment ? segment : null;
+		}).join(' / ');
+	}
+
+	function getCategorySegments(category) {
+		var normalized = normalizeCategoryPath(category);
+
+		if (!normalized) {
+			return [];
+		}
+
+		return normalized.split(' / ');
+	}
+
+	function buildReplyTree() {
+		var root = {
+			categories: {},
+			replies: []
+		};
+
+		$.each(getReplies(), function(index, reply) {
+			var node = root;
+			var segments = getCategorySegments(reply.category);
+
+			$.each(segments, function(_, segment) {
+				if (!node.categories[segment]) {
+					node.categories[segment] = {
+						name: segment,
+						categories: {},
+						replies: []
+					};
+				}
+
+				node = node.categories[segment];
+			});
+
+			node.replies.push($.extend({
+				_index: index
+			}, reply));
+		});
+
+		return root;
+	}
+
+	function getTreeNode(path) {
+		var node = buildReplyTree();
+
+		$.each(path, function(_, segment) {
+			if (!node.categories[segment]) {
+				node = null;
+				return false;
+			}
+
+			node = node.categories[segment];
+		});
+
+		return node;
+	}
+
+	function appendSectionTitle(container, text) {
+		container.append(
+			$('<div />')
+				.addClass('handled-saved-replies-menu-section')
+				.text(text)
+		);
+	}
+
+	function appendBackRow(container, backText) {
+		var row = $('<div />').addClass('handled-saved-replies-menu-row');
+		var button = $('<button />', { type: 'button' })
+			.addClass('handled-saved-replies-menu-back')
+			.attr('data-menu-action', 'back')
+			.append(
+				$('<span />')
+					.append($('<i />').addClass('glyphicon glyphicon-chevron-left'))
+					.append(' ' + backText)
+			);
+
+		row.append(button);
+		container.append(row);
+	}
+
+	function appendCategoryRow(container, name) {
+		var row = $('<div />').addClass('handled-saved-replies-menu-row');
+		var button = $('<button />', { type: 'button' })
+			.addClass('handled-saved-replies-menu-link')
+			.attr('data-menu-action', 'open-category')
+			.data('category-segment', name)
+			.append($('<span />').text(name))
+			.append($('<i />').addClass('glyphicon glyphicon-chevron-right'));
+
+		row.append(button);
+		container.append(row);
+	}
+
+	function appendReplyRow(container, reply, config) {
+		var row = $('<div />').addClass('handled-saved-replies-menu-row');
+		var insertButton = $('<button />', { type: 'button' })
+			.addClass('handled-saved-replies-menu-link')
+			.attr('data-menu-action', 'insert-reply')
+			.attr('data-reply-index', reply._index)
+			.append($('<span />').text(reply.name || ''))
+			.append($('<span />').addClass('text-muted').html('&nbsp;'));
+
+		row.append(insertButton);
+
+		if (config.canManage) {
+			row.append(
+				$('<button />', {
+					type: 'button',
+					title: config.openSettingsText
+				})
+					.addClass('handled-saved-replies-menu-edit')
+					.attr('data-menu-action', 'edit-reply')
+					.attr('data-reply-index', reply._index)
+					.append($('<i />').addClass('glyphicon glyphicon-eye-open'))
+			);
+		}
+
+		container.append(row);
+	}
+
+	function renderMenu() {
+		var config = getConfig();
+		var list = getMenuList();
+		var node = getTreeNode(currentPath);
+		var categoryNames = [];
+		var replies = [];
+
+		if (!list.length) {
+			return;
+		}
+
+		if (!node) {
+			currentPath = [];
+			node = getTreeNode(currentPath);
+		}
+
+		getBreadcrumb().text(currentPath.length ? currentPath.join(' / ') : '');
+		list.empty();
+
+		if (currentPath.length) {
+			appendBackRow(list, config.backText);
+		}
+
+		categoryNames = Object.keys(node.categories).sort(function(a, b) {
+			return a.localeCompare(b);
+		});
+		replies = (node.replies || []).slice().sort(function(a, b) {
+			return (a.name || '').localeCompare(b.name || '');
+		});
+
+		if (!categoryNames.length && !replies.length) {
+			list.append(
+				$('<div />')
+					.addClass('handled-saved-replies-menu-empty')
+					.text(config.emptyText)
+			);
+			return;
+		}
+
+		if (categoryNames.length) {
+			appendSectionTitle(list, config.menuTitleText);
+			$.each(categoryNames, function(_, categoryName) {
+				appendCategoryRow(list, categoryName);
+			});
+		}
+
+		if (replies.length) {
+			appendSectionTitle(list, config.rootRepliesText);
+			$.each(replies, function(_, reply) {
+				appendReplyRow(list, reply, config);
+			});
+		}
+	}
+
+	function insertReply(index) {
+		var replies = getReplies();
+		var savedReply = replies[index];
+		var body = '';
+
+		if (!savedReply) {
+			return;
+		}
+
+		body = savedReply.rendered_body || savedReply.body || '';
+		if (!body) {
+			return;
+		}
+
+		getDropdown().removeClass('open');
+		$('#body').summernote('focus');
+		$('#body').summernote('pasteHTML', body);
+		if (typeof(onReplyChange) === 'function') {
+			onReplyChange();
+		}
+	}
+
+	$(document)
+		.off('show.bs.dropdown.handledSavedReplies', '.handled-saved-replies-dropdown')
+		.off('click.handledSavedReplies', '.handled-saved-replies-menu [data-menu-action]')
+		.off('click.handledSavedReplies', '.handled-saved-replies-menu-back')
+		.off('click.handledSavedReplies', '.handled-saved-replies-menu-link[data-menu-action="open-category"]')
+		.off('click.handledSavedReplies', '.handled-saved-replies-menu-link[data-menu-action="insert-reply"]')
+		.off('click.handledSavedReplies', '.handled-saved-replies-menu-edit[data-menu-action="edit-reply"]')
+		.off('click.handledSavedReplies', '.handled-saved-replies-manage')
+		.off('click.handledSavedReplies', '.handled-saved-replies-new')
+		.on('show.bs.dropdown.handledSavedReplies', '.handled-saved-replies-dropdown', function() {
+			currentPath = [];
+			renderMenu();
+		})
+		.on('click.handledSavedReplies', '.handled-saved-replies-menu [data-menu-action]', function(event) {
+			event.preventDefault();
+			event.stopPropagation();
+		})
+		.on('click.handledSavedReplies', '.handled-saved-replies-menu-back', function() {
+			currentPath = currentPath.slice(0, -1);
+			renderMenu();
+		})
+		.on('click.handledSavedReplies', '.handled-saved-replies-menu-link[data-menu-action="open-category"]', function() {
+			currentPath.push($(this).data('category-segment'));
+			renderMenu();
+		})
+		.on('click.handledSavedReplies', '.handled-saved-replies-menu-link[data-menu-action="insert-reply"]', function() {
+			insertReply(parseInt($(this).data('reply-index'), 10));
+		})
+		.on('click.handledSavedReplies', '.handled-saved-replies-menu-edit[data-menu-action="edit-reply"]', function() {
+			redirectToSettings({
+				handled_saved_reply_index: parseInt($(this).data('reply-index'), 10)
+			});
+		})
+		.on('click.handledSavedReplies', '.handled-saved-replies-manage', function(event) {
+			event.preventDefault();
+			event.stopPropagation();
+			redirectToSettings();
+		})
+		.on('click.handledSavedReplies', '.handled-saved-replies-new', function(event) {
+			event.preventDefault();
+			event.stopPropagation();
+			redirectToSettings({
+				handled_saved_reply_action: 'new',
+				handled_saved_reply_category: currentPath.join(' / ')
+			});
+		});
+
+	renderMenu();
+}
+
+function initHandledSupportActions()
+{
+	if (!$('.handled-conversation-footer[data-handled-support-action-enabled="1"]').length) {
+		return;
+	}
+
+	$(document)
+		.off('click.handledSupportAction', '.handled-support-action')
+		.on('click.handledSupportAction', '.handled-support-action', function(event) {
+			event.preventDefault();
+
+			var button = $(this);
+			var container = button.closest('.handled-conversation-footer[data-handled-conversation-id]');
+			var confirmMessage = button.data('confirm');
+			var conversationId = parseInt(container.attr('data-handled-conversation-id') || '0', 10);
+			var genericErrorText = container.attr('data-handled-generic-error-text') || 'An error occurred';
+			var data = {
+				action: button.data('action'),
+				conversation_id: conversationId,
+				business_id: button.data('business-id')
+			};
+
+			if (button.prop('disabled') || !conversationId) {
+				return;
+			}
+
+			if (confirmMessage && !window.confirm(confirmMessage)) {
+				return;
+			}
+
+			if (button.data('ticket-id')) {
+				data.ticket_id = button.data('ticket-id');
+			}
+
+			if (button.data('customer-email')) {
+				data.customer_email = button.data('customer-email');
+			}
+
+			if (typeof button.data('responses-paused') !== 'undefined') {
+				data.responses_paused = button.data('responses-paused');
+			}
+
+			button.prop('disabled', true);
+
+			fsAjax(data, laroute.route('conversations.ajax'), function(response) {
+				if (isAjaxSuccess(response)) {
+					showFloatingAlert('success', response.msg, true);
+					window.setTimeout(function() {
+						window.location.reload();
+					}, 900);
+				} else {
+					button.prop('disabled', false);
+					showAjaxError(response, true);
+				}
+			}, true, function() {
+				button.prop('disabled', false);
+				showFloatingAlert('error', genericErrorText, true);
+			});
+		});
+}
+
 function onReplyChange()
 {
 	// Mark draft as unsaved

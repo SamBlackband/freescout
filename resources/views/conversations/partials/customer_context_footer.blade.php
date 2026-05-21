@@ -130,7 +130,12 @@
 @endphp
 
 @if ($handled_footer_visible)
-    <div class="handled-conversation-footer">
+    <div
+        class="handled-conversation-footer"
+        data-handled-conversation-id="{{ $handled_conversation_id }}"
+        data-handled-generic-error-text="{{ $handled_generic_error_text }}"
+        data-handled-support-action-enabled="{{ $handled_support_action_js_enabled ? 1 : 0 }}"
+    >
         <div class="handled-conversation-footer-grid">
             <section class="handled-conversation-footer-card handled-context-card handled-context-panel">
                 <div class="handled-context-card-header">
@@ -691,62 +696,4 @@
             @action('conversation.after_prev_convs', $customer, $conversation, $mailbox)
         @endif
     </div>
-
-    @if ($handled_support_action_js_enabled)
-        <script>
-            jQuery(function($) {
-                $(document)
-                    .off('click.handledSupportAction', '.handled-support-action')
-                    .on('click.handledSupportAction', '.handled-support-action', function(event) {
-                        event.preventDefault();
-
-                        var button = $(this);
-                        var confirmMessage = button.data('confirm');
-
-                        if (button.prop('disabled')) {
-                            return;
-                        }
-
-                        if (confirmMessage && !window.confirm(confirmMessage)) {
-                            return;
-                        }
-
-                        var data = {
-                            action: button.data('action'),
-                            conversation_id: @json($handled_conversation_id),
-                            business_id: button.data('business-id')
-                        };
-
-                        if (button.data('ticket-id')) {
-                            data.ticket_id = button.data('ticket-id');
-                        }
-
-                        if (button.data('customer-email')) {
-                            data.customer_email = button.data('customer-email');
-                        }
-
-                        if (typeof button.data('responses-paused') !== 'undefined') {
-                            data.responses_paused = button.data('responses-paused');
-                        }
-
-                        button.prop('disabled', true);
-
-                        fsAjax(data, laroute.route('conversations.ajax'), function(response) {
-                            if (isAjaxSuccess(response)) {
-                                showFloatingAlert('success', response.msg, true);
-                                window.setTimeout(function() {
-                                    window.location.reload();
-                                }, 900);
-                            } else {
-                                button.prop('disabled', false);
-                                showAjaxError(response, true);
-                            }
-                        }, true, function() {
-                            button.prop('disabled', false);
-                            showFloatingAlert('error', @json($handled_generic_error_text), true);
-                        });
-                    });
-            });
-        </script>
-    @endif
 @endif
