@@ -34,7 +34,7 @@
                                 class="form-control"
                                 name="settings[handled_saved_replies][{{ $index }}][category]"
                                 value="{{ $savedReply['category'] ?? '' }}"
-                                maxlength="80"
+                                maxlength="160"
                                 placeholder="{{ __('Billing / Refunds / Partial refund') }}"
                             >
                             @include('partials/field_error', ['field' => 'settings.handled_saved_replies.'.$index.'.category'])
@@ -107,7 +107,7 @@
                         type="text"
                         class="form-control"
                         name="settings[handled_saved_replies][__INDEX__][category]"
-                        maxlength="80"
+                        maxlength="160"
                         placeholder="{{ __('Billing / Refunds / Partial refund') }}"
                     >
                 </div>

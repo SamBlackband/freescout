@@ -63,7 +63,7 @@ class AppServiceProvider extends ServiceProvider
             return [
                 'validator_rules' => [
                     'settings.handled_saved_replies' => 'array',
-                    'settings.handled_saved_replies.*.category' => 'nullable|string|max:80',
+                    'settings.handled_saved_replies.*.category' => 'nullable|string|max:160',
                     'settings.handled_saved_replies.*.name' => 'nullable|string|max:80',
                     'settings.handled_saved_replies.*.body' => 'nullable|string|max:20000',
                 ],

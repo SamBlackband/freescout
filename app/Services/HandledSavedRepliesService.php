@@ -46,7 +46,7 @@ class HandledSavedRepliesService
                 continue;
             }
 
-            $category = mb_substr(trim((string) ($savedReply['category'] ?? '')), 0, 80);
+            $category = mb_substr(trim((string) ($savedReply['category'] ?? '')), 0, 160);
             $name = mb_substr(trim((string) ($savedReply['name'] ?? '')), 0, 80);
             $body = trim((string) ($savedReply['body'] ?? ''));
 

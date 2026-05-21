@@ -794,6 +794,9 @@ class ConversationsController extends Controller
                 if (!$response['msg'] && !$user->can('view', $mailbox)) {
                     $response['msg'] = __('Not enough permissions');
                 }
+                if (!$response['msg'] && !$user->isAdmin()) {
+                    $response['msg'] = __('Not enough permissions');
+                }
                 if (!$response['msg'] && $conversation && !$user->can('update', $conversation)) {
                     $response['msg'] = __('Not enough permissions');
                 }
