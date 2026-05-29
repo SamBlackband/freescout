@@ -264,4 +264,6 @@
     @parent
     initReplyForm(true, true, true);
     initNewConversation(@if ($conversation->type == App\Conversation::TYPE_PHONE){{ 'true' }}@endif);
+    initHandledSavedRepliesToolbar();
+    initHandledConversationTags();
 @endsection

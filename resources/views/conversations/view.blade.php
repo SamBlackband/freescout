@@ -511,5 +511,6 @@
     initReplyForm();
     initConversation();
     initHandledSavedRepliesToolbar();
+    initHandledConversationTags();
     initHandledSupportActions();
 @endsection

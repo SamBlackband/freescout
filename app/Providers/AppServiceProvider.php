@@ -41,43 +41,72 @@ class AppServiceProvider extends ServiceProvider
 
         \Eventy::addFilter('settings.sections', function ($sections) {
             $sections['saved_replies'] = ['title' => __('Saved Replies'), 'icon' => 'comment', 'order' => 350];
+            $sections['tags'] = ['title' => __('Tags'), 'icon' => 'tag', 'order' => 360];
 
             return $sections;
         }, 20, 1);
 
         \Eventy::addFilter('settings.section_settings', function ($settings, $section) {
-            if ($section !== 'saved_replies') {
-                return $settings;
+            if ($section === 'saved_replies') {
+                return [
+                    'handled_saved_replies' => app(\App\Services\HandledSavedRepliesService::class)->getStoredReplies(),
+                ];
             }
 
-            return [
-                'handled_saved_replies' => app(\App\Services\HandledSavedRepliesService::class)->getStoredReplies(),
-            ];
+            if ($section === 'tags') {
+                return [
+                    'handled_tags_page' => true,
+                ];
+            }
+
+            return $settings;
         }, 20, 2);
 
         \Eventy::addFilter('settings.section_params', function ($params, $section) {
-            if ($section !== 'saved_replies') {
-                return $params;
+            if ($section === 'saved_replies') {
+                return [
+                    'validator_rules' => [
+                        'settings.handled_saved_replies' => 'array',
+                        'settings.handled_saved_replies.*.category' => 'nullable|string|max:160',
+                        'settings.handled_saved_replies.*.name' => 'nullable|string|max:80',
+                        'settings.handled_saved_replies.*.body' => 'nullable|string|max:20000',
+                        'settings.handled_saved_replies.*.tag_ids' => 'nullable|array',
+                    ],
+                    'settings' => [
+                        'handled_saved_replies' => [
+                            'default' => [],
+                        ],
+                    ],
+                    'template_vars' => [
+                        'handled_tag_options' => app(\App\Services\HandledTagsService::class)->getTagOptions(),
+                    ],
+                ];
             }
 
-            return [
-                'validator_rules' => [
-                    'settings.handled_saved_replies' => 'array',
-                    'settings.handled_saved_replies.*.category' => 'nullable|string|max:160',
-                    'settings.handled_saved_replies.*.name' => 'nullable|string|max:80',
-                    'settings.handled_saved_replies.*.body' => 'nullable|string|max:20000',
-                ],
-                'settings' => [
-                    'handled_saved_replies' => [
-                        'default' => [],
+            if ($section === 'tags') {
+                return [
+                    'settings' => [
+                        'handled_tags_page' => [
+                            'default' => true,
+                        ],
                     ],
-                ],
-            ];
+                    'template_vars' => [
+                        'handled_tags' => app(\App\Services\HandledTagsService::class)->getManagementTags(),
+                        'handled_tag_options' => app(\App\Services\HandledTagsService::class)->getTagOptions(),
+                    ],
+                ];
+            }
+
+            return $params;
         }, 20, 2);
 
         \Eventy::addFilter('settings.view', function ($view, $section) {
             if ($section === 'saved_replies') {
                 return 'settings.saved_replies';
+            }
+
+            if ($section === 'tags') {
+                return 'settings.tags';
             }
 
             return $view;
@@ -105,6 +134,115 @@ class AppServiceProvider extends ServiceProvider
                 'handled_saved_replies_conversation_id' => $conversation ? $conversation->id : null,
             ])->render();
         }, 20, 2);
+
+        \Eventy::addAction('conversation.after_subject', function ($conversation) {
+            echo view('conversations.partials.handled_tags_summary', [
+                'conversation' => $conversation,
+            ])->render();
+        }, 20, 1);
+
+        \Eventy::addAction('reply_form.after', function ($conversation) {
+            $user = auth()->user();
+            $tagsService = app(\App\Services\HandledTagsService::class);
+
+            if (!$conversation || !$tagsService->canManageTags($user) || !$user->can('update', $conversation)) {
+                return;
+            }
+
+            echo view('conversations.partials.handled_tags_picker', [
+                'handled_can_manage_tags' => true,
+                'handled_conversation_id' => $conversation->id,
+                'handled_tag_options' => $tagsService->getTagOptions(),
+                'handled_tag_selected_ids' => $conversation->handledTags()->pluck('handled_tags.id')->all(),
+            ])->render();
+        }, 20, 1);
+
+        \Eventy::addAction('new_conversation_form.after', function ($conversation) {
+            $user = auth()->user();
+            $tagsService = app(\App\Services\HandledTagsService::class);
+
+            if (!$tagsService->canManageTags($user)) {
+                return;
+            }
+
+            echo view('conversations.partials.handled_tags_picker', [
+                'handled_can_manage_tags' => true,
+                'handled_tag_options' => $tagsService->getTagOptions(),
+                'handled_tag_selected_ids' => request()->input('handled_tag_ids', []),
+            ])->render();
+        }, 20, 1);
+
+        \Eventy::addFilter('conversations_table.preload_table_data', function ($conversations) {
+            return app(\App\Services\HandledTagsService::class)->preloadConversationTags($conversations);
+        }, 20, 1);
+
+        \Eventy::addAction('conversations_table.after_subject', function ($conversation) {
+            echo view('conversations.partials.handled_tags_summary', [
+                'conversation' => $conversation,
+                'handled_show_empty_state' => false,
+            ])->render();
+        }, 20, 1);
+
+        \Eventy::addAction('search.display_filters', function ($filters, $filters_data, $mode) {
+            if ($mode !== \App\Conversation::SEARCH_MODE_CONV) {
+                return;
+            }
+
+            echo view('conversations.partials.handled_tags_search_filter', [
+                'filters' => $filters,
+                'handled_tags' => app(\App\Services\HandledTagsService::class)->getTagOptions(),
+            ])->render();
+        }, 20, 3);
+
+        \Eventy::addFilter('search.filters_list', function ($filtersList, $mode) {
+            if ($mode === \App\Conversation::SEARCH_MODE_CONV && !in_array('tag', $filtersList)) {
+                $filtersList[] = 'tag';
+            }
+
+            return $filtersList;
+        }, 20, 2);
+
+        \Eventy::addFilter('search.filters', function ($filters, $mode) {
+            if ($mode !== \App\Conversation::SEARCH_MODE_CONV) {
+                return $filters;
+            }
+
+            if (!empty($filters['tag'])) {
+                $filters['tag'] = app(\App\Services\HandledTagsService::class)->getValidTagIds($filters['tag']);
+            }
+
+            return $filters;
+        }, 20, 2);
+
+        \Eventy::addFilter('search.conversations.apply_filters', function ($query, $filters) {
+            if (empty($filters['tag'])) {
+                return $query;
+            }
+
+            $tagIds = app(\App\Services\HandledTagsService::class)->getValidTagIds($filters['tag']);
+            if (!count($tagIds)) {
+                return $query->whereRaw('1 = 0');
+            }
+
+            return $query->whereExists(function ($subQuery) use ($tagIds) {
+                $subQuery->select(\DB::raw(1))
+                    ->from('handled_conversation_tag')
+                    ->whereColumn('handled_conversation_tag.conversation_id', 'conversations.id')
+                    ->whereIn('handled_conversation_tag.tag_id', $tagIds);
+            });
+        }, 20, 2);
+
+        \Eventy::addAction('bulk_actions.before_delete', function ($folder) {
+            $tagsService = app(\App\Services\HandledTagsService::class);
+
+            if (!$tagsService->canManageTags(auth()->user())) {
+                return;
+            }
+
+            echo view('conversations.partials.handled_tags_bulk_actions', [
+                'handled_tag_options' => $tagsService->getTagOptions(),
+            ])->render();
+        }, 20, 1);
 
         \Validator::extend('safehost', function ($attribute, $value, $parameters, $validator) {
             if (!$value) {

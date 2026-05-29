@@ -813,6 +813,33 @@ class ConversationsController extends Controller
                 }
                 break;
 
+            case 'handled_conversation_sync_tags':
+                $conversation = Conversation::find($request->conversation_id);
+
+                if (!$conversation) {
+                    $response['msg'] = __('Conversation not found');
+                }
+                if (!$response['msg'] && !$user->can('update', $conversation)) {
+                    $response['msg'] = __('Not enough permissions');
+                }
+                if (!$response['msg'] && !app(\App\Services\HandledTagsService::class)->canManageTags($user)) {
+                    $response['msg'] = __('Not enough permissions');
+                }
+                if (!$response['msg']) {
+                    $tagIds = $this->syncHandledConversationTagsFromRequest($request, $conversation, $user);
+                    $response['status'] = 'success';
+                    $response['msg'] = __('Tags updated');
+                    $response['tags'] = app(\App\Services\HandledTagsService::class)->findTagsByIds($tagIds)->map(function ($tag) {
+                        return [
+                            'id' => (int) $tag->id,
+                            'name' => $tag->name,
+                            'color' => $tag->color,
+                        ];
+                    })->values()->all();
+                    \Session::flash('flash_success_floating', __('Tags updated'));
+                }
+                break;
+
             // Send reply, new conversation, add note or forward
             case 'send_reply':
 
@@ -1369,6 +1396,8 @@ class ConversationsController extends Controller
                         }
                     }
 
+                    $syncedTagIds = $this->syncHandledConversationTagsFromRequest($request, $conversation, $user);
+
                     // Follow conversation if it's assigned to someone else.
                     if (!$is_create && !$new && !$is_forward && !$is_note
                         && $conversation->user_id != $user->id
@@ -1457,6 +1486,10 @@ class ConversationsController extends Controller
                             \Eventy::action('thread.before_save_from_request', $thread_copy, $request);
 
                             $thread_copy->push();
+
+                            if (count($syncedTagIds)) {
+                                app(\App\Services\HandledTagsService::class)->syncConversationTags($conversation_copy, $syncedTagIds, $user);
+                            }
 
                             // Copy attachments.
                             if (!empty($attachments_info['attachments'])) {
@@ -1698,6 +1731,7 @@ class ConversationsController extends Controller
                     $conversation->updateFolder();
 
                     $conversation->save();
+                    $this->syncHandledConversationTagsFromRequest($request, $conversation, $user);
 
                     // Create thread
                     if (empty($thread)) {
@@ -2234,6 +2268,52 @@ class ConversationsController extends Controller
                     \Session::flash('flash_success_floating', $flash_message);
 
                     $response['msg'] = __('Status updated');
+                }
+                break;
+
+            case 'bulk_conversation_add_tag':
+                if (!app(\App\Services\HandledTagsService::class)->canManageTags($user)) {
+                    $response['msg'] = __('Not enough permissions');
+                }
+
+                if (!$response['msg']) {
+                    $conversations = Conversation::findMany($request->conversation_id);
+                    $tagId = (int) $request->tag_id;
+                    $conversationIds = [];
+
+                    foreach ($conversations as $conversation) {
+                        if ($user->can('update', $conversation)) {
+                            $conversationIds[] = $conversation->id;
+                        }
+                    }
+
+                    app(\App\Services\HandledTagsService::class)->addTagToConversations($conversationIds, $tagId, $user);
+                    $response['status'] = 'success';
+                    $response['msg'] = __('Tag added');
+                    \Session::flash('flash_success_floating', __('Tag added'));
+                }
+                break;
+
+            case 'bulk_conversation_remove_tag':
+                if (!app(\App\Services\HandledTagsService::class)->canManageTags($user)) {
+                    $response['msg'] = __('Not enough permissions');
+                }
+
+                if (!$response['msg']) {
+                    $conversations = Conversation::findMany($request->conversation_id);
+                    $tagId = (int) $request->tag_id;
+                    $conversationIds = [];
+
+                    foreach ($conversations as $conversation) {
+                        if ($user->can('update', $conversation)) {
+                            $conversationIds[] = $conversation->id;
+                        }
+                    }
+
+                    app(\App\Services\HandledTagsService::class)->removeTagFromConversations($conversationIds, $tagId);
+                    $response['status'] = 'success';
+                    $response['msg'] = __('Tag removed');
+                    \Session::flash('flash_success_floating', __('Tag removed'));
                 }
                 break;
 
@@ -3056,6 +3136,21 @@ class ConversationsController extends Controller
         }
 
         return (string) $user->email;
+    }
+
+    protected function syncHandledConversationTagsFromRequest(Request $request, Conversation $conversation, User $user)
+    {
+        $tagsService = app(\App\Services\HandledTagsService::class);
+
+        if (!$tagsService->canManageTags($user)) {
+            return [];
+        }
+
+        return $tagsService->syncConversationTags(
+            $conversation,
+            $request->input('handled_tag_ids', []),
+            $user
+        );
     }
 
     /**

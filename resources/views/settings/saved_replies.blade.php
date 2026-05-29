@@ -102,6 +102,32 @@
                             @include('partials/field_error', ['field' => 'settings.handled_saved_replies.'.$index.'.body'])
                         </div>
                     </div>
+
+                    <div class="form-group">
+                        <label for="handled_saved_reply_tags_{{ $index }}" class="col-sm-2 control-label">{{ __('Tags') }}</label>
+
+                        <div class="col-sm-8">
+                            <select
+                                id="handled_saved_reply_tags_{{ $index }}"
+                                class="form-control handled-saved-reply-tags"
+                                name="settings[handled_saved_replies][{{ $index }}][tag_ids][]"
+                                multiple
+                                data-placeholder="{{ __('Select tags to apply with this reply') }}"
+                            >
+                                @foreach (($handled_tag_options ?? []) as $handledTagOption)
+                                    <option
+                                        value="{{ $handledTagOption['id'] }}"
+                                        @if (in_array((int) $handledTagOption['id'], array_map('intval', $savedReply['tag_ids'] ?? []))) selected="selected" @endif
+                                    >
+                                        {{ $handledTagOption['name'] }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            <p class="form-help">
+                                {{ __('When this reply is used, its tags are merged into the ticket tag selection before the draft or reply is saved.') }}
+                            </p>
+                        </div>
+                    </div>
                 </div>
             </div>
         @endforeach
@@ -171,6 +197,27 @@
                     </p>
                 </div>
             </div>
+
+            <div class="form-group">
+                <label for="handled_saved_reply_tags___INDEX__" class="col-sm-2 control-label">{{ __('Tags') }}</label>
+
+                <div class="col-sm-8">
+                    <select
+                        id="handled_saved_reply_tags___INDEX__"
+                        class="form-control handled-saved-reply-tags"
+                        name="settings[handled_saved_replies][__INDEX__][tag_ids][]"
+                        multiple
+                        data-placeholder="{{ __('Select tags to apply with this reply') }}"
+                    >
+                        @foreach (($handled_tag_options ?? []) as $handledTagOption)
+                            <option value="{{ $handledTagOption['id'] }}">{{ $handledTagOption['name'] }}</option>
+                        @endforeach
+                    </select>
+                    <p class="form-help">
+                        {{ __('When this reply is used, its tags are merged into the ticket tag selection before the draft or reply is saved.') }}
+                    </p>
+                </div>
+            </div>
         </div>
     </div>
 </script>
@@ -201,9 +248,22 @@
 
             function addReplyItem() {
                 list.append(template.replace(/__INDEX__/g, nextIndex));
+                initReplyTagSelect(list.find('.handled-saved-reply-item:last').find('.handled-saved-reply-tags'));
                 nextIndex++;
 
                 return list.find('.handled-saved-reply-item:last');
+            }
+
+            function initReplyTagSelect(input) {
+                if (!input || !input.length || input.hasClass('select2-hidden-accessible')) {
+                    return;
+                }
+
+                input.select2({
+                    width: '100%',
+                    placeholder: input.attr('data-placeholder') || '',
+                    closeOnSelect: false
+                });
             }
 
             $('#handled-saved-reply-add').on('click', function() {
@@ -235,6 +295,8 @@
                     }
                 }
             }
+
+            initReplyTagSelect($('.handled-saved-reply-tags'));
         });
     })();
 @endsection

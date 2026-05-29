@@ -7,6 +7,7 @@
     $handled_saved_reply_root_replies_text = __('Replies');
     $handled_saved_reply_manage_text = __('Manage library');
     $handled_saved_reply_new_text = __('New reply');
+    $handled_saved_reply_preview_text = __('Preview reply');
     $handled_saved_reply_open_settings_text = __('Open settings');
     $handled_saved_reply_edit_text = __('Edit');
     $handled_saved_reply_manage_hint_text = __('Manage saved replies in settings');
@@ -133,6 +134,31 @@
         display: inline-flex;
         align-items: center;
         justify-content: center;
+    }
+
+    .handled-tag-chip-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .handled-tag-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 10px;
+        border-radius: 999px;
+        font-size: 12px;
+        font-weight: 600;
+        text-decoration: none;
+    }
+
+    .handled-tag-chip-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 999px;
+        background: currentColor;
+        opacity: 0.72;
     }
 
     @media (max-width: 991px) {

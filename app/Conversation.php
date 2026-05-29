@@ -322,6 +322,16 @@ class Conversation extends Model
     }
 
     /**
+     * Tags attached to the conversation.
+     */
+    public function handledTags()
+    {
+        return $this->belongsToMany('App\HandledTag', 'handled_conversation_tag', 'conversation_id', 'tag_id')
+            ->withPivot('applied_by_user_id')
+            ->withTimestamps();
+    }
+
+    /**
      * Folders containing starred conversations.
      */
     public function extraFolders()

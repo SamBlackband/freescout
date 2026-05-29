@@ -19,9 +19,17 @@ class HandledSavedRepliesService
     public function getComposerReplies($conversation = null, $savedReplies = null)
     {
         $storedReplies = is_array($savedReplies) ? $this->normalizeReplies($savedReplies) : $this->getStoredReplies();
+        $tagsService = app(HandledTagsService::class);
 
-        return array_values(array_map(function ($savedReply) use ($conversation) {
+        return array_values(array_map(function ($savedReply) use ($conversation, $tagsService) {
             $savedReply['rendered_body'] = $this->renderReplyBody($savedReply['body'], $conversation);
+            $savedReply['tags'] = $tagsService->findTagsByIds($savedReply['tag_ids'] ?? [])->map(function ($tag) {
+                return [
+                    'id' => (int) $tag->id,
+                    'name' => $tag->name,
+                    'color' => $tag->color ?: HandledTagsService::DEFAULT_COLOR,
+                ];
+            })->values()->all();
 
             return $savedReply;
         }, $storedReplies));
@@ -40,6 +48,7 @@ class HandledSavedRepliesService
     public function normalizeReplies(array $savedReplies)
     {
         $normalizedReplies = [];
+        $tagsService = app(HandledTagsService::class);
 
         foreach ($savedReplies as $savedReply) {
             if (!is_array($savedReply)) {
@@ -62,6 +71,7 @@ class HandledSavedRepliesService
                 'category' => $category,
                 'name' => $name,
                 'body' => \Helper::stripDangerousTags($body),
+                'tag_ids' => $tagsService->getValidTagIds($savedReply['tag_ids'] ?? []),
             ];
         }
 

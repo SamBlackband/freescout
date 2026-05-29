@@ -42,6 +42,7 @@ Route::post('/app-logs/{name?}', ['uses' => 'SecureController@logsSubmit', 'midd
 // Settings
 Route::post('/app-settings/ajax', ['uses' => 'SettingsController@ajax', 'middleware' => ['auth', 'roles'], 'roles' => ['admin'], 'laroute' => true])->name('settings.ajax');
 Route::get('/app-settings/{section?}', ['uses' => 'SettingsController@view', 'middleware' => ['auth', 'roles'], 'roles' => ['admin']])->name('settings');
+Route::post('/handled-tags/manage', ['uses' => 'HandledTagsController@manage', 'middleware' => ['auth']])->name('handled.tags.manage');
 Route::post('/app-settings/{section?}', ['uses' => 'SettingsController@save', 'middleware' => ['auth', 'roles'], 'roles' => ['admin']])->name('settings.save');
 
 // Users

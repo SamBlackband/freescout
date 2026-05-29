@@ -1868,10 +1868,14 @@ function ajaxSetup()
 
 function getHandledSavedRepliesDropdown()
 {
-	var dropdown = $('.note-statusbar .handled-saved-replies-dropdown:first');
+	var dropdown = $('.note-statusbar .handled-saved-replies-dropdown:visible:first');
 
 	if (!dropdown.length) {
-		dropdown = $('#editor_bottom_toolbar .handled-saved-replies-dropdown:first');
+		dropdown = $('#editor_bottom_toolbar .handled-saved-replies-dropdown:visible:first');
+	}
+
+	if (!dropdown.length) {
+		dropdown = $('.handled-saved-replies-dropdown:first');
 	}
 
 	return dropdown;
@@ -1987,6 +1991,63 @@ function initHandledSavedRepliesToolbar()
 		}).join(' / ');
 	}
 
+	function escapeHandledText(value) {
+		return $('<div />').text(value || '').html();
+	}
+
+	function getHandledTagPicker() {
+		return $('.handled-tag-picker:enabled:first');
+	}
+
+	function mergeReplyTags(savedReply) {
+		var picker = getHandledTagPicker();
+		var selectedValues = picker.val() || [];
+
+		if (!picker.length || !savedReply || !Array.isArray(savedReply.tag_ids) || !savedReply.tag_ids.length) {
+			return;
+		}
+
+		$.each(savedReply.tag_ids, function(_, tagId) {
+			tagId = String(tagId);
+			if ($.inArray(tagId, selectedValues) === -1) {
+				selectedValues.push(tagId);
+			}
+		});
+
+		picker.val(selectedValues).trigger('change');
+	}
+
+	function buildReplyPreview(savedReply, replyIndex, config) {
+		var tagsHtml = '';
+		var body = savedReply.rendered_body || savedReply.body || '';
+		var category = normalizeCategoryPath(savedReply.category || '');
+
+		if (Array.isArray(savedReply.tags) && savedReply.tags.length) {
+			$.each(savedReply.tags, function(_, tag) {
+				tagsHtml += '<span class="handled-tag-chip" style="background:' + escapeHandledText((tag.color || '#5B6B7A') + '20') + ';color:' + escapeHandledText(tag.color || '#5B6B7A') + ';margin-right:8px;">'
+					+ '<span class="handled-tag-chip-dot"></span>'
+					+ '<span>' + escapeHandledText(tag.name || '') + '</span>'
+					+ '</span>';
+			});
+		} else {
+			tagsHtml = '<span class="text-help">No tags</span>';
+		}
+
+		return '<div class="modal-header">'
+			+ '<button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>'
+			+ '<h3 class="modal-title">' + escapeHandledText(savedReply.name || '') + '</h3>'
+			+ '</div>'
+			+ '<div class="modal-body">'
+			+ '<div class="margin-bottom"><strong>' + escapeHandledText(config.menuTitleText || 'Saved replies') + ':</strong> ' + escapeHandledText(category || config.rootRepliesText || '') + '</div>'
+			+ '<div class="margin-bottom"><strong>Tags:</strong> <div class="handled-tag-chip-list">' + tagsHtml + '</div></div>'
+			+ '<div class="panel panel-default"><div class="panel-body">' + body + '</div></div>'
+			+ '</div>'
+			+ '<div class="modal-footer">'
+			+ (config.canManage ? '<button type="button" class="btn btn-default handled-saved-replies-preview-open-settings" data-reply-index="' + replyIndex + '">' + escapeHandledText(config.openSettingsText || 'Open settings') + '</button>' : '')
+			+ '<button type="button" class="btn btn-primary" data-dismiss="modal">Close</button>'
+			+ '</div>';
+	}
+
 	function getCategorySegments(category) {
 		var normalized = normalizeCategoryPath(category);
 
@@ -2093,7 +2154,7 @@ function initHandledSavedRepliesToolbar()
 			row.append(
 				$('<button />', {
 					type: 'button',
-					title: config.openSettingsText
+					title: 'Preview'
 				})
 					.addClass('handled-saved-replies-menu-edit')
 					.attr('data-menu-action', 'edit-reply')
@@ -2173,12 +2234,28 @@ function initHandledSavedRepliesToolbar()
 			return;
 		}
 
+		mergeReplyTags(savedReply);
 		getDropdown().removeClass('open');
 		$('#body').summernote('focus');
 		$('#body').summernote('pasteHTML', body);
 		if (typeof(onReplyChange) === 'function') {
 			onReplyChange();
 		}
+	}
+
+	function previewReply(index) {
+		var replies = getReplies();
+		var savedReply = replies[index];
+
+		if (!savedReply) {
+			return;
+		}
+
+		showModalDialog(buildReplyPreview(savedReply, index, getConfig()), {
+			width_auto: false,
+			no_header: true,
+			no_footer: true
+		});
 	}
 
 	$(document)
@@ -2188,6 +2265,7 @@ function initHandledSavedRepliesToolbar()
 		.off('click.handledSavedReplies', '.handled-saved-replies-menu-link[data-menu-action="open-category"]')
 		.off('click.handledSavedReplies', '.handled-saved-replies-menu-link[data-menu-action="insert-reply"]')
 		.off('click.handledSavedReplies', '.handled-saved-replies-menu-edit[data-menu-action="edit-reply"]')
+		.off('click.handledSavedReplies', '.handled-saved-replies-preview-open-settings')
 		.off('click.handledSavedReplies', '.handled-saved-replies-manage')
 		.off('click.handledSavedReplies', '.handled-saved-replies-new')
 		.on('show.bs.dropdown.handledSavedReplies', '.handled-saved-replies-dropdown', function() {
@@ -2210,6 +2288,10 @@ function initHandledSavedRepliesToolbar()
 			insertReply(parseInt($(this).data('reply-index'), 10));
 		})
 		.on('click.handledSavedReplies', '.handled-saved-replies-menu-edit[data-menu-action="edit-reply"]', function() {
+			previewReply(parseInt($(this).data('reply-index'), 10));
+		})
+		.on('click.handledSavedReplies', '.handled-saved-replies-preview-open-settings', function(event) {
+			event.preventDefault();
 			redirectToSettings({
 				handled_saved_reply_index: parseInt($(this).data('reply-index'), 10)
 			});
@@ -2229,6 +2311,51 @@ function initHandledSavedRepliesToolbar()
 		});
 
 	renderMenu();
+}
+
+function initHandledConversationTags()
+{
+	$('.handled-tag-picker').each(function() {
+		var input = $(this);
+
+		if (!input.hasClass('select2-hidden-accessible')) {
+			input.select2({
+				width: '100%',
+				placeholder: input.attr('data-placeholder') || '',
+				closeOnSelect: false
+			});
+		}
+	});
+
+	$(document)
+		.off('click.handledConversationTags', '.handled-tag-picker-save')
+		.on('click.handledConversationTags', '.handled-tag-picker-save', function(event) {
+			var button = $(this);
+			var wrap = button.closest('.handled-tag-picker-wrap');
+			var picker = wrap.find('.handled-tag-picker:first');
+
+			button.button('loading');
+
+			fsAjax(
+				{
+					action: 'handled_conversation_sync_tags',
+					conversation_id: button.data('conversation-id'),
+					tag_ids: picker.val() || []
+				},
+				laroute.route('conversations.ajax'),
+				function(response) {
+					button.button('reset');
+					if (isAjaxSuccess(response)) {
+						location.reload();
+					} else {
+						showAjaxError(response);
+					}
+				},
+				true
+			);
+
+			event.preventDefault();
+		});
 }
 
 function initHandledSupportActions()
@@ -5330,6 +5457,52 @@ function converstationBulkActionsInit()
 							showAjaxError(response);
 						}
 					}, true
+				);
+				e.preventDefault();
+			});
+
+			$(".conv-tag-add li > a", bulk_buttons).click(function(e) {
+				var tag_id = $(this).data('tag_id');
+				var conv_ids = getSelectedConversations();
+
+				fsAjax(
+					{
+						action: 'bulk_conversation_add_tag',
+						conversation_id: conv_ids,
+						tag_id: tag_id
+					},
+					laroute.route('conversations.ajax'),
+					function(response) {
+						if (isAjaxSuccess(response)) {
+							location.reload();
+						} else {
+							showAjaxError(response);
+						}
+					},
+					true
+				);
+				e.preventDefault();
+			});
+
+			$(".conv-tag-remove li > a", bulk_buttons).click(function(e) {
+				var tag_id = $(this).data('tag_id');
+				var conv_ids = getSelectedConversations();
+
+				fsAjax(
+					{
+						action: 'bulk_conversation_remove_tag',
+						conversation_id: conv_ids,
+						tag_id: tag_id
+					},
+					laroute.route('conversations.ajax'),
+					function(response) {
+						if (isAjaxSuccess(response)) {
+							location.reload();
+						} else {
+							showAjaxError(response);
+						}
+					},
+					true
 				);
 				e.preventDefault();
 			});
