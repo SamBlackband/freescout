@@ -31,6 +31,7 @@ class HandledSupportSyncEmitter
 
         $thread = Thread::with([
             'conversation.mailbox',
+            'conversation.handledTags',
             'conversation.customer.emails',
             'customer.emails',
             'user',
@@ -70,6 +71,7 @@ class HandledSupportSyncEmitter
 
         $conversation = Conversation::with([
             'mailbox',
+            'handledTags',
             'customer.emails',
             'threads' => function ($query) {
                 $query->orderBy('created_at', 'desc')->limit(1);
@@ -217,6 +219,13 @@ class HandledSupportSyncEmitter
             'assignee' => [
                 'id' => $conversation->user_id,
             ],
+            'tags' => $conversation->handledTags->map(function ($tag) {
+                return [
+                    'id' => (int) $tag->id,
+                    'name' => $tag->name,
+                    'color' => $tag->color,
+                ];
+            })->values()->all(),
             'threads_count' => $conversation->threads_count,
             'created_at' => $this->normalizeTimestamp($conversation->created_at),
             'updated_at' => $this->normalizeTimestamp($conversation->updated_at),
