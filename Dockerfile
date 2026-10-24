@@ -1,4 +1,4 @@
-FROM docker.io/tiredofit/freescout:latest
+FROM docker.io/nfrastack/freescout:2.1.5-php8.3
 
 ENV ENABLE_AUTO_UPDATE=FALSE
 
