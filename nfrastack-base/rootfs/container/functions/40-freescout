@@ -1,0 +1,174 @@
+# SPDX-FileCopyrightText: © 2026 Nfrastack <code@nfrastack.com>
+#
+# SPDX-License-Identifier: MIT
+
+freescout_compare_version() {
+    local _image_version
+    local _current_version
+    local _version_file
+    local _timestamp
+    local _data_version_file
+
+    _image_version=$(grep -o "ADD: FreeScout .* |" "/container/build/${IMAGE_NAME//\//_}/build.log" | awk '{print $3}')
+    _version_file="${NGINX_WEBROOT%/}/${VERSION_FILE}"
+    _data_version_file="${DATA_PATH%/}/${VERSION_FILE}"
+    _timestamp=$(TZ=${TIMEZONE} date +'%Y-%m-%d %H:%M:%S %Z')
+
+    if [ ! -f "${_version_file}" ] && [ ! -f "${_data_version_file}" ]; then
+        echo "${_image_version} first installed on ${_timestamp}" \
+            | write_file "${NGINX_USER}":"${NGINX_GROUP}"@"${_version_file}":660
+        return
+    fi
+
+    if var_false "${ENABLE_AUTO_UPDATE}"; then
+        return
+    fi
+
+    if [ -f "${_version_file}" ]; then
+        _current_version=$(head -n 1 "${_version_file}" | awk '{print $1}')
+    elif [ -f "${_data_version_file}" ]; then
+        _current_version=$(head -n 1 "${_data_version_file}" | awk '{print $1}')
+    fi
+
+    if [ "${_image_version}" = "${_current_version}" ]; then
+        return
+    fi
+
+    print_warn "Detected in-place FreeScout ${_current_version} - upgrading to ${_image_version}"
+    cp -aR "${LARAVEL_INSTALL_DATA_PATH%/}"/install/. "${NGINX_WEBROOT%/}/"
+    chown -R "${NGINX_USER}":"${NGINX_GROUP}" "${NGINX_WEBROOT}"
+
+    cd "${NGINX_WEBROOT}"
+    silent sudo -u "${NGINX_USER}" php "${NGINX_WEBROOT%/}"/artisan migrate --no-interaction --force
+    silent sudo -u "${NGINX_USER}" php "${NGINX_WEBROOT%/}"/artisan freescout:after-app-update
+
+    sed -i --follow-symlinks "1i ${_image_version} upgraded on ${_timestamp}" "${_version_file}"
+}
+
+freescout_bootstrap_volatile_data() {
+    create_folder "${NGINX_WEBROOT}" "${NGINX_USER}":"${NGINX_GROUP}" 775
+
+    if var_false "${ENABLE_STORAGE_REDIRECTION}"; then
+        return
+    fi
+
+    create_folder "${DATA_PATH}" "${NGINX_USER}":"${NGINX_GROUP}" 750
+    if [ ! -d "${MODULES_PATH%/}" ]; then
+        create_folder "${MODULES_PATH}" "${NGINX_USER}":"${NGINX_GROUP}" 775
+        if [ -d "${NGINX_WEBROOT%/}"/Modules ]; then
+            cp -R "${NGINX_WEBROOT%/}"/Modules/. "${MODULES_PATH%/}"/
+        fi
+    fi
+    if [ ! -L "${NGINX_WEBROOT%/}"/Modules ]; then
+        rm -rf "${NGINX_WEBROOT%/}"/Modules
+        ln -s "${MODULES_PATH%/}" "${NGINX_WEBROOT%/}"/Modules
+    fi
+    chown -R "${NGINX_USER}":"${NGINX_GROUP}" "${MODULES_PATH%/}"
+
+    if [ -f "${NGINX_WEBROOT%/}"/"${VERSION_FILE}" ] && [ ! -L "${NGINX_WEBROOT%/}"/"${VERSION_FILE}" ]; then
+        if [ ! -e "${DATA_PATH%/}/${VERSION_FILE}" ]; then
+            mv "${NGINX_WEBROOT%/}"/"${VERSION_FILE}" "${DATA_PATH%/}/${VERSION_FILE}"
+        fi
+    fi
+    if [ -e "${DATA_PATH%/}/${VERSION_FILE}" ] && [ ! -L "${NGINX_WEBROOT%/}"/"${VERSION_FILE}" ]; then
+        rm -f "${NGINX_WEBROOT%/}"/"${VERSION_FILE}"
+        ln -s "${DATA_PATH%/}/${VERSION_FILE}" "${NGINX_WEBROOT%/}"/"${VERSION_FILE}"
+        chown -h "${NGINX_USER}":"${NGINX_GROUP}" "${NGINX_WEBROOT%/}"/"${VERSION_FILE}"
+    fi
+}
+
+freescout_configure_app() {
+    if [ -z "${APP_URL}" ] && [ -n "${SITE_URL}" ]; then
+        print_warn "SITE_URL is deprecated; please set APP_URL instead. Migrating SITE_URL to APP_URL."
+        APP_URL="${SITE_URL}"
+    fi
+
+    sanity_var APP_URL "full external URL of the site eg https://freescout.example.com)"
+    laravel_env_update APP_URL "${APP_URL}"
+
+    case "${APP_URL,,}" in
+        http://*)  laravel_env_update SESSION_SECURE_COOKIE false ;;
+        https://*) laravel_env_update SESSION_SECURE_COOKIE true ;;
+    esac
+
+    sed -i "s|server_name .*;|server_name $(echo "${APP_URL}" | sed 's|http.*//||g');|g" /etc/nginx/sites.enabled/freescout/server-begin/09-server_name.conf
+
+    local _app_host
+    _app_host=$(echo "${APP_URL}" | sed -nE 's|^https?://([^/:]+).*|\1|p')
+    if [ -n "${_app_host}" ]; then
+        laravel_env_update APP_TRUSTED_HOSTS "${_app_host},localhost,127.0.0.1"
+    else
+        laravel_env_update APP_TRUSTED_HOSTS "localhost,127.0.0.1"
+    fi
+
+    laravel_env_update APP_DISABLE_UPDATING true
+    laravel_env_update APP_TIMEZONE "${TIMEZONE}"
+}
+
+freescout_create_admin() {
+    transform_var file \
+                        ADMIN_EMAIL \
+                        ADMIN_FIRST_NAME \
+                        ADMIN_LAST_NAME \
+                        ADMIN_PASS
+
+    sanity_var ADMIN_EMAIL "Admin Email Address"
+    sanity_var ADMIN_PASS  "Admin Password"
+
+    print_notice "Creating FreeScout administrative user '${ADMIN_EMAIL}'"
+    silent sudo -u "${NGINX_USER}" php "${NGINX_WEBROOT%/}"/artisan \
+                                                                -n freescout:create-user \
+                                                                    --role=admin \
+                                                                    --firstName="${ADMIN_FIRST_NAME}" \
+                                                                    --lastName="${ADMIN_LAST_NAME}" \
+                                                                    --email="${ADMIN_EMAIL}" \
+                                                                    --password="${ADMIN_PASS}"
+}
+
+freescout_configure_scheduler() {
+    local _cron_output
+    local _scheduler_log_file
+
+    case "${SCHEDULER_LOG_TYPE,,}" in
+        file )
+            _scheduler_log_file="${SCHEDULER_LOG_PATH%/}/${SCHEDULER_LOG_FILE}"
+            if [ "${SCHEDULER_LOG_PATH%/}" != "/dev/null" ] && [ "${SCHEDULER_LOG_FILE}" != "/dev/null" ]; then
+                create_folder "${SCHEDULER_LOG_PATH}" "${NGINX_USER}":"${NGINX_GROUP}" 750
+                create_logrotate freescout-scheduler "${_scheduler_log_file}" none "${NGINX_USER}" "${NGINX_GROUP}"
+            fi
+            _cron_output="| sudo -u ${NGINX_USER} tee -a ${_scheduler_log_file} > /dev/null"
+        ;;
+        console )
+            _cron_output="> /proc/1/fd/1 2>&1"
+        ;;
+        none | *)
+            _cron_output="> /dev/null 2>&1"
+        ;;
+    esac
+
+    case "${SCHEDULER_TYPE,,}" in
+        alt* )
+            print_notice "[configure_scheduler] Using alternate scheduling routines"
+        ;;
+        cron | *)
+            print_debug "[configure_scheduler] Using cron based scheduling routines"
+            service_stop 41-freescout-scheduler
+            echo "* * * * * { echo \"\$(TZ=${TIMEZONE} date +'%Y-%m-%d.%H:%M:%S') Scheduling start\"; sudo -u ${NGINX_USER} TZ=${TIMEZONE} php ${NGINX_WEBROOT}/artisan schedule:run | TZ=${TIMEZONE} awk '{ print strftime(\"%Y-%m-%d %H:%M:%S\"), \$0; fflush() }'; echo \"\$(TZ=${TIMEZONE} date +'%Y-%m-%d.%H:%M:%S') Scheduling Finished\"; } ${_cron_output}" | write_file /container/cron/freescout-schedule
+        ;;
+    esac
+}
+
+freescout_install_modules() {
+    if [ ! -d "${NGINX_WEBROOT%/}"/Modules ] || dir_empty "${NGINX_WEBROOT%/}"/Modules; then return; fi
+    print_notice "Registering FreeScout modules"
+    silent /usr/bin/expect<<EOMODULES
+spawn sudo -u ${NGINX_USER} php ${NGINX_SITE_FREESCOUT_WEBROOT%/}/artisan freescout:module-install --no-ansi
+set timeout 30
+expect \
+{
+  (yes/no) {exp_send yes\r;exp_continue}
+  eof {}
+#  timeout {puts "Putting you in control - to exit type \\ twice";interact \\\\}
+}
+EOMODULES
+}

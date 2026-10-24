@@ -1,0 +1,51 @@
+#!/command/with-contenv bash
+# SPDX-FileCopyrightText: © 2026 Nfrastack <code@nfrastack.com>
+#
+# SPDX-License-Identifier: MIT
+
+source /container/base/functions/container/init
+prepare_service 30-laravel,40-freescout
+SERVICE_NAME="freescout"
+
+sanity_db
+db_ready "${DB_TYPE}"
+
+freescout_bootstrap_volatile_data
+freescout_configure_scheduler
+
+if [ "${SETUP_TYPE,,}" = "auto" ]; then
+    print_notice "Generating FreeScout Configuration"
+    freescout_compare_version
+    freescout_configure_app
+
+    if laravel_db_is_populated; then
+        print_info "DB schema present - running migrations only"
+        silent sudo -u "${NGINX_USER}" php "${NGINX_WEBROOT%/}"/artisan \
+                                                                    migrate \
+                                                                        --no-interaction \
+                                                                        --force
+    else
+        print_warn "Empty database detected - migrating + creating admin user"
+        sleep 2
+        silent sudo -u "${NGINX_USER}" php "${NGINX_WEBROOT%/}"/artisan \
+                                                                    migrate \
+                                                                        --no-interaction \
+                                                                        --force
+        freescout_create_admin
+    fi
+
+    custom_files "${CONTAINER_CUSTOM_PATH}" "${NGINX_WEBROOT}" "${NGINX_USER}" "${NGINX_GROUP}"
+    custom_scripts
+
+    freescout_install_modules
+    laravel_env_passthrough
+    for artisan_command in freescout:clear-cache config:clear storage:link freescout:after-app-update; do
+        silent sudo -u "${NGINX_USER}" php "${NGINX_WEBROOT%/}"/artisan "${artisan_command}"
+    done
+else
+    print_warn "SETUP_TYPE='${SETUP_TYPE}' - skipping config generation, migrations, admin bootstrap"
+fi
+
+print_info "Initialization Complete. Please visit ${APP_URL:-${SITE_URL}} and login with your credentials."
+
+liftoff
