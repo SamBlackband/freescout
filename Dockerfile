@@ -24,7 +24,8 @@ COPY webpack.mix.js /www/html/webpack.mix.js
 COPY .env.example /www/html/.env.example
 
 COPY install/ /
-RUN chmod +x /etc/cont-init.d/31-app-key-sync \
+RUN sed -i 's/\r$//' /container/init/init.d/50-handled-freescout \
+    && chmod +x /container/init/init.d/50-handled-freescout \
     && mkdir -p /www/html/storage/logs /www/html/storage/app/public /www/html/storage/framework/cache/data /www/html/storage/framework/sessions /www/html/storage/framework/views
 
 EXPOSE 80

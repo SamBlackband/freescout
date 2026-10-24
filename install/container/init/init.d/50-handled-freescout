@@ -1,0 +1,32 @@
+#!/command/with-contenv bash
+# Runs after nfrastack's 30-laravel and 40-freescout init scripts.
+# Env passthrough (APP_KEY, FREESCOUT_* -> .env) is handled by the base image; this only fixes
+# ownership of paths the fork copies in as root and forces a rebuild of minified assets.
+
+source /container/base/functions/container/init
+prepare_service single
+SERVICE_NAME="handled-freescout"
+
+NGINX_WEBROOT="${NGINX_WEBROOT:-/www/html}"
+NGINX_USER="${NGINX_USER:-nginx}"
+NGINX_GROUP="${NGINX_GROUP:-www-data}"
+
+cd "${NGINX_WEBROOT}" || exit 1
+
+mkdir -p bootstrap/cache public/css/builds public/js/builds
+rm -rf public/css/builds/* public/js/builds/*
+
+for path in bootstrap/cache public/css/builds public/js/builds storage/ ; do
+    chown -R "${NGINX_USER}":"${NGINX_GROUP}" "${path}" 2>/dev/null || true
+    chmod -R ug+rwX "${path}" 2>/dev/null || true
+done
+
+if [ -f artisan ]; then
+    for artisan_command in config:clear view:clear route:clear freescout:clear-cache ; do
+        silent sudo -H -u "${NGINX_USER}" php artisan "${artisan_command}" --no-interaction
+    done
+fi
+
+print_info "Handled FreeScout post-init complete"
+
+liftoff
